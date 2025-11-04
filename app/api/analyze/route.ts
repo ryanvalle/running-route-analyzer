@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      analysis,
+      analysis: {
+        ...analysis,
+        points: points as RoutePoint[],
+      },
     });
   } catch (error) {
     console.error('Error analyzing route:', error);

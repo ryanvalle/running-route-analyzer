@@ -1,7 +1,5 @@
 import { RouteAnalysis, RoutePoint, RouteSegment } from '@/types';
-
-const METERS_TO_MILES = 0.000621371;
-const FEET_PER_METER = 3.28084;
+import { METERS_TO_MILES, FEET_PER_METER } from './constants';
 
 export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
   if (!points || points.length === 0) {

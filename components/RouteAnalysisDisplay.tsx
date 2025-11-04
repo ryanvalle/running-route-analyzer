@@ -1,12 +1,26 @@
 'use client';
 
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { RouteAnalysis } from '@/types';
+
+// Dynamically import RouteMap to avoid SSR issues with Leaflet
+const RouteMap = dynamic(() => import('./RouteMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <p className="text-gray-500 dark:text-gray-400">Loading map...</p>
+    </div>
+  ),
+});
 
 interface RouteAnalysisDisplayProps {
   analysis: RouteAnalysis;
 }
 
 export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayProps) {
+  const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+
   return (
     <div className="w-full space-y-6">
       {/* Summary */}
@@ -18,6 +32,20 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
           {analysis.summary}
         </p>
       </div>
+
+      {/* Route Map */}
+      {analysis.points && analysis.points.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
+            Route Map
+          </h2>
+          <RouteMap
+            points={analysis.points}
+            segments={analysis.segments}
+            hoveredSegmentIndex={hoveredSegmentIndex}
+          />
+        </div>
+      )}
 
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -52,7 +80,9 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
           {analysis.segments.map((segment, index) => (
             <div
               key={index}
-              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+              onMouseEnter={() => setHoveredSegmentIndex(index)}
+              onMouseLeave={() => setHoveredSegmentIndex(null)}
             >
               <div className="flex justify-between items-start mb-2">
                 <div>

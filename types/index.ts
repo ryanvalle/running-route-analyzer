@@ -13,6 +13,7 @@ export interface RouteAnalysis {
   totalElevationLoss: number;
   segments: RouteSegment[];
   summary: string;
+  points?: RoutePoint[];
 }
 
 export interface LatLng {
