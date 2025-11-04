@@ -29,13 +29,11 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        // For demo purposes, use mock data if available
-        if (data.mockData?.points) {
-          onFetch(data.mockData.points);
-          setError('Using demo data (Strava API not configured)');
-          return;
-        }
         throw new Error(data.error || 'Failed to fetch activity');
+      }
+
+      if (data.demo) {
+        setError('Using demo data (Strava API not configured)');
       }
 
       onFetch(data.points);

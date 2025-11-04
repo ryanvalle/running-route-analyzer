@@ -23,20 +23,13 @@ export async function POST(request: NextRequest) {
     const activityId = activityIdMatch[1];
 
     // Note: In production, you would need to implement OAuth flow
-    // For now, this returns a mock response with instructions
+    // For now, return mock data for demonstration
     return NextResponse.json({
-      error: 'Strava API integration requires authentication',
-      message: 'To use Strava integration, you need to:',
-      instructions: [
-        '1. Create a Strava API application at https://www.strava.com/settings/api',
-        '2. Add STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET to your .env.local file',
-        '3. Implement OAuth flow to get user access tokens',
-        '4. Use the access token to fetch activity data from Strava API',
-      ],
+      success: true,
+      points: generateMockStravaData(),
+      demo: true,
+      message: 'Using demo data. To use real Strava data, configure Strava API credentials.',
       activityId,
-      mockData: {
-        points: generateMockStravaData(),
-      },
     });
   } catch (error) {
     console.error('Error fetching Strava activity:', error);
