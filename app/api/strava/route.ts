@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
 
     // Check if token is expired and refresh if needed
     let currentAccessToken = accessToken;
+    let newTokenData = null;
     if (expiresAt && refreshToken) {
       const expirationTime = parseInt(expiresAt);
       const now = Math.floor(Date.now() / 1000);
@@ -73,11 +74,8 @@ export async function POST(request: NextRequest) {
         });
 
         if (refreshResponse.ok) {
-          const tokenData = await refreshResponse.json();
-          currentAccessToken = tokenData.access_token;
-          
-          // Update cookies with new token (would be better to set this in response)
-          // Note: For a complete implementation, return the new tokens in response headers
+          newTokenData = await refreshResponse.json();
+          currentAccessToken = newTokenData.access_token;
         } else {
           return NextResponse.json({
             error: 'Token refresh failed. Please re-authenticate.',
@@ -130,13 +128,39 @@ export async function POST(request: NextRequest) {
     // Convert Strava stream data to our RoutePoint format
     const points = convertStravaStreamToPoints(streamData);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       points,
       demo: false,
       activityId,
       activityName: activityData.name,
     });
+
+    // If we refreshed the token, update the cookies in the response
+    if (newTokenData) {
+      response.cookies.set('strava_access_token', newTokenData.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 6, // 6 hours
+      });
+
+      response.cookies.set('strava_refresh_token', newTokenData.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+
+      response.cookies.set('strava_expires_at', newTokenData.expires_at.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('Error fetching Strava activity:', error);
     return NextResponse.json(

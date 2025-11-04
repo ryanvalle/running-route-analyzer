@@ -47,7 +47,11 @@ export async function GET(request: NextRequest) {
     const refreshToken = tokenData.refresh_token;
     const expiresAt = tokenData.expires_at;
 
-    // Store the tokens in a cookie (in production, use a more secure method)
+    // Store the tokens in HTTP-only cookies for security
+    // For production with multiple users, consider using:
+    // - Encrypted database storage with user sessions
+    // - Redis/session store for better scalability
+    // - Server-side session management libraries like iron-session or next-auth
     const response = NextResponse.redirect(new URL('/?auth=success', request.url));
     
     // Set cookies with tokens (httpOnly for security)
