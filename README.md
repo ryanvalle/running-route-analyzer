@@ -1,1 +1,186 @@
-# running-route-analyzer
+# Running Route Analyzer
+
+A Next.js application that analyzes running routes from Strava activities or uploaded FIT files, providing detailed elevation profiles and terrain summaries.
+
+## Features
+
+- 📊 **Route Analysis**: Get detailed mile-by-mile breakdowns of your running routes
+- 🏔️ **Elevation Profiles**: See elevation gain, loss, and grade for each segment
+- 🔗 **Strava Integration**: Analyze routes directly from Strava activity URLs (demo mode included)
+- 📁 **FIT File Support**: Upload FIT files from your GPS running watch
+- 🌓 **Dark Mode**: Fully responsive design with dark mode support
+- ⚡ **Fast**: Built with Next.js 16 for optimal performance
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20.x or higher
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/ryanvalle/running-route-analyzer.git
+cd running-route-analyzer
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Run the development server:
+```bash
+npm run dev
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Building for Production
+
+```bash
+npm run build
+npm start
+```
+
+## Deployment to Vercel
+
+This app is optimized for deployment on Vercel:
+
+1. Push your code to GitHub
+2. Import your repository in [Vercel](https://vercel.com)
+3. Vercel will automatically detect Next.js and configure the build settings
+4. Deploy!
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ryanvalle/running-route-analyzer)
+
+## Usage
+
+### Analyzing a Strava Activity
+
+1. Go to your Strava activity page
+2. Copy the activity URL (e.g., `https://www.strava.com/activities/123456`)
+3. Paste it into the "From Strava Activity" input field
+4. Click "Analyze"
+
+**Note**: The Strava integration currently runs in demo mode with mock data. To use real Strava data:
+1. Create a Strava API application at https://www.strava.com/settings/api
+2. Add environment variables: `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET`
+3. Implement OAuth flow in `/app/api/strava/route.ts`
+
+### Uploading a FIT File
+
+1. Export a FIT file from your GPS watch or running app
+2. Click "Upload FIT File" or drag and drop the file
+3. The app will automatically parse and analyze the route
+
+## How It Works
+
+The analyzer:
+1. Extracts GPS coordinates and elevation data from the route
+2. Segments the route into mile-based intervals
+3. Calculates elevation gain, loss, and average grade for each segment
+4. Generates a natural language summary of the terrain
+5. Presents the data in an easy-to-read format
+
+Example output:
+- "The first 3 miles will be relatively flat"
+- "Expect elevation gain starting at mile 4"
+- Mile-by-mile breakdown with grade percentages
+
+## Technology Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **FIT File Parsing**: fit-file-parser
+- **Strava Integration**: strava-v3 (for future real integration)
+
+## Project Structure
+
+```
+running-route-analyzer/
+├── app/
+│   ├── api/
+│   │   ├── analyze/      # Route analysis endpoint
+│   │   ├── fit-upload/   # FIT file upload handler
+│   │   └── strava/       # Strava API integration
+│   ├── layout.tsx
+│   └── page.tsx          # Main application page
+├── components/
+│   ├── FileUpload.tsx           # FIT file upload component
+│   ├── StravaInput.tsx          # Strava URL input component
+│   └── RouteAnalysisDisplay.tsx # Analysis results display
+├── lib/
+│   └── routeAnalysis.ts  # Core route analysis logic
+├── types/
+│   └── index.ts          # TypeScript type definitions
+└── public/               # Static assets
+```
+
+## API Endpoints
+
+### POST `/api/analyze`
+Analyzes route points and returns elevation profile.
+
+**Request:**
+```json
+{
+  "points": [
+    {
+      "lat": 37.7749,
+      "lng": -122.4194,
+      "elevation": 100,
+      "distance": 0
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "analysis": {
+    "totalDistance": 5.0,
+    "totalElevationGain": 500,
+    "totalElevationLoss": 450,
+    "segments": [...],
+    "summary": "The first 3 miles will be relatively flat..."
+  }
+}
+```
+
+### POST `/api/fit-upload`
+Uploads and parses a FIT file.
+
+**Request:** FormData with `file` field
+
+**Response:**
+```json
+{
+  "success": true,
+  "points": [...],
+  "totalPoints": 1000
+}
+```
+
+### POST `/api/strava`
+Fetches route data from Strava activity (demo mode).
+
+**Request:**
+```json
+{
+  "activityUrl": "https://www.strava.com/activities/123456"
+}
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT
