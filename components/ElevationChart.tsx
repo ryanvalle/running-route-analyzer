@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 import { RoutePoint } from '@/types';
 import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
+// SVG dimensions for the elevation chart
+const CHART_WIDTH = 1000;
+const CHART_HEIGHT = 200;
+
 interface ElevationChartProps {
   points: RoutePoint[];
 }
@@ -19,22 +23,23 @@ export default function ElevationChart({ points }: ElevationChartProps) {
     }));
   }, [points]);
 
-  const { minElevation, maxElevation, elevationRange } = useMemo(() => {
+  const { minElevation, elevationRange, actualMin, actualMax } = useMemo(() => {
     if (chartData.length === 0) {
-      return { minElevation: 0, maxElevation: 0, elevationRange: 0 };
+      return { minElevation: 0, elevationRange: 0, actualMin: 0, actualMax: 0 };
     }
     
     const elevations = chartData.map(d => d.elevation);
-    const min = Math.min(...elevations);
-    const max = Math.max(...elevations);
-    const range = max - min;
+    const actualMin = Math.min(...elevations);
+    const actualMax = Math.max(...elevations);
+    const range = actualMax - actualMin;
     
-    // Add 10% padding to top and bottom
+    // Add 10% padding to top and bottom for better visualization
     const padding = range * 0.1;
     return {
-      minElevation: min - padding,
-      maxElevation: max + padding,
+      minElevation: actualMin - padding,
       elevationRange: range + 2 * padding,
+      actualMin,
+      actualMax,
     };
   }, [chartData]);
 
@@ -43,12 +48,10 @@ export default function ElevationChart({ points }: ElevationChartProps) {
     if (chartData.length === 0) return '';
     
     const maxDistance = chartData[chartData.length - 1].distance;
-    const width = 1000; // SVG viewBox width
-    const height = 200; // SVG viewBox height
     
     const points = chartData.map(d => {
-      const x = (d.distance / maxDistance) * width;
-      const y = height - ((d.elevation - minElevation) / elevationRange) * height;
+      const x = (d.distance / maxDistance) * CHART_WIDTH;
+      const y = CHART_HEIGHT - ((d.elevation - minElevation) / elevationRange) * CHART_HEIGHT;
       return `${x},${y}`;
     });
     
@@ -60,17 +63,15 @@ export default function ElevationChart({ points }: ElevationChartProps) {
     if (chartData.length === 0) return '';
     
     const maxDistance = chartData[chartData.length - 1].distance;
-    const width = 1000;
-    const height = 200;
     
     const points = chartData.map(d => {
-      const x = (d.distance / maxDistance) * width;
-      const y = height - ((d.elevation - minElevation) / elevationRange) * height;
+      const x = (d.distance / maxDistance) * CHART_WIDTH;
+      const y = CHART_HEIGHT - ((d.elevation - minElevation) / elevationRange) * CHART_HEIGHT;
       return `${x},${y}`;
     });
     
     // Start at bottom left, draw the elevation line, then close at bottom right
-    return `M 0,${height} L ${points.join(' L ')} L ${width},${height} Z`;
+    return `M 0,${CHART_HEIGHT} L ${points.join(' L ')} L ${CHART_WIDTH},${CHART_HEIGHT} Z`;
   }, [chartData, minElevation, elevationRange]);
 
   if (chartData.length === 0) {
@@ -90,7 +91,7 @@ export default function ElevationChart({ points }: ElevationChartProps) {
       </h2>
       <div className="w-full">
         <svg
-          viewBox="0 0 1000 200"
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className="w-full h-auto"
           preserveAspectRatio="none"
         >
@@ -106,7 +107,7 @@ export default function ElevationChart({ points }: ElevationChartProps) {
               />
             </pattern>
           </defs>
-          <rect width="1000" height="200" fill="url(#grid)" />
+          <rect width={CHART_WIDTH} height={CHART_HEIGHT} fill="url(#grid)" />
           
           {/* Filled area under the line */}
           <path
@@ -137,7 +138,7 @@ export default function ElevationChart({ points }: ElevationChartProps) {
         
         {/* Y-axis info */}
         <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <span>Elevation: {Math.round(minElevation + elevationRange * 0.1)} - {Math.round(maxElevation - elevationRange * 0.1)} ft</span>
+          <span>Elevation: {Math.round(actualMin)} - {Math.round(actualMax)} ft</span>
         </div>
       </div>
     </div>
