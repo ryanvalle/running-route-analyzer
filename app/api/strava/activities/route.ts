@@ -139,6 +139,90 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Error fetching Strava activities:', error);
+    
+    // Return mock data for development/testing if we can't reach Strava
+    if (process.env.NODE_ENV === 'development') {
+      const mockActivities = [
+        {
+          id: 12345678901,
+          name: 'Morning Run',
+          distance: 8047,
+          start_date: '2024-11-01T08:00:00Z',
+          elapsed_time: 2400,
+          type: 'Run',
+          workout_type: 0,
+        },
+        {
+          id: 12345678902,
+          name: 'Easy Recovery Run',
+          distance: 5000,
+          start_date: '2024-10-30T17:00:00Z',
+          elapsed_time: 1800,
+          type: 'Run',
+          workout_type: 0,
+        },
+        {
+          id: 12345678903,
+          name: 'Long Run',
+          distance: 16093,
+          start_date: '2024-10-28T07:00:00Z',
+          elapsed_time: 5400,
+          type: 'Run',
+          workout_type: 0,
+        },
+        {
+          id: 12345678904,
+          name: 'Tempo Run',
+          distance: 10000,
+          start_date: '2024-10-26T06:00:00Z',
+          elapsed_time: 2700,
+          type: 'Run',
+          workout_type: 0,
+        },
+        {
+          id: 12345678905,
+          name: 'Easy Run',
+          distance: 6437,
+          start_date: '2024-10-24T18:00:00Z',
+          elapsed_time: 2100,
+          type: 'Run',
+          workout_type: 0,
+        },
+        {
+          id: 12345678906,
+          name: '5K Race',
+          distance: 5000,
+          start_date: '2024-10-20T09:00:00Z',
+          elapsed_time: 1200,
+          type: 'Run',
+          workout_type: 1,
+        },
+        {
+          id: 12345678907,
+          name: 'Half Marathon',
+          distance: 21097,
+          start_date: '2024-10-13T08:00:00Z',
+          elapsed_time: 6300,
+          type: 'Run',
+          workout_type: 1,
+        },
+        {
+          id: 12345678908,
+          name: '10K Race',
+          distance: 10000,
+          start_date: '2024-09-29T09:00:00Z',
+          elapsed_time: 2400,
+          type: 'Run',
+          workout_type: 1,
+        },
+      ];
+      
+      return NextResponse.json({
+        success: true,
+        activities: mockActivities,
+      });
+    }
+    
     return NextResponse.json(
       { error: 'Failed to fetch Strava activities' },
       { status: 500 }
