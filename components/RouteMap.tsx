@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { RoutePoint, RouteSegment } from '@/types';
@@ -11,6 +11,7 @@ interface RouteMapProps {
   points: RoutePoint[];
   segments: RouteSegment[];
   hoveredSegmentIndex: number | null;
+  hoveredPoint?: RoutePoint | null;
 }
 
 // Component to fit map bounds to route
@@ -26,7 +27,7 @@ function FitBounds({ bounds }: { bounds: LatLngBounds }) {
   return null;
 }
 
-export default function RouteMap({ points, segments, hoveredSegmentIndex }: RouteMapProps) {
+export default function RouteMap({ points, segments, hoveredSegmentIndex, hoveredPoint }: RouteMapProps) {
   // Convert RoutePoint[] to LatLng pairs for the full route
   const routePath = useMemo(() => {
     return points.map(p => [p.lat, p.lng] as [number, number]);
@@ -100,6 +101,22 @@ export default function RouteMap({ points, segments, hoveredSegmentIndex }: Rout
               opacity: 0.9,
             }}
           />
+        )}
+        
+        {/* Marker for hovered point on elevation chart */}
+        {hoveredPoint && (
+          <>
+            <CircleMarker
+              center={[hoveredPoint.lat, hoveredPoint.lng]}
+              radius={10}
+              pathOptions={{
+                color: '#ef4444',
+                fillColor: '#ffffff',
+                fillOpacity: 1,
+                weight: 3,
+              }}
+            />
+          </>
         )}
       </MapContainer>
     </div>
