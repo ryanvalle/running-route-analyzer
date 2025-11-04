@@ -7,13 +7,11 @@ import RouteAnalysisDisplay from '@/components/RouteAnalysisDisplay';
 import { RoutePoint, RouteAnalysis } from '@/types';
 
 export default function Home() {
-  const [, setRoutePoints] = useState<RoutePoint[] | null>(null);
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleRouteData = async (points: RoutePoint[]) => {
-    setRoutePoints(points);
     setAnalyzing(true);
     setError(null);
 
