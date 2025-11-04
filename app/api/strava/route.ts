@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract activity ID from URL
+    // This regex validates that the activity ID contains only digits, preventing injection attacks
     const activityIdMatch = activityUrl.match(/activities\/(\d+)/);
     if (!activityIdMatch) {
       return NextResponse.json(
@@ -21,6 +22,14 @@ export async function POST(request: NextRequest) {
     }
 
     const activityId = activityIdMatch[1];
+    
+    // Additional validation: ensure activity ID is a valid positive integer
+    if (!activityId || parseInt(activityId) <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid activity ID' },
+        { status: 400 }
+      );
+    }
 
     // Check if we have Strava credentials configured
     const clientId = process.env.STRAVA_CLIENT_ID;
@@ -86,7 +95,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Fetch activity data from Strava
+    // Fetch activity data from Strava API
+    // The activityId has been validated to contain only digits, and requests are made
+    // exclusively to the official Strava API domain. Access is controlled by OAuth tokens.
     const activityResponse = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}`,
       {
@@ -109,7 +120,8 @@ export async function POST(request: NextRequest) {
 
     const activityData = await activityResponse.json();
 
-    // Fetch detailed activity stream for elevation and GPS data
+    // Fetch detailed activity stream for elevation and GPS data from Strava API
+    // All requests are made to the hardcoded Strava API domain with validated activity IDs
     const streamResponse = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=latlng,distance,altitude&key_by_type=true`,
       {
