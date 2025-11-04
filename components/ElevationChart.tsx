@@ -169,9 +169,10 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex, 
     const maxDistance = chartData[chartData.length - 1].distance;
     const x = (hoveredDistance / maxDistance) * CHART_WIDTH;
     
-    // Find elevation at this distance
+    // Find elevation at this distance from chartData (already in feet)
     let elevation = 0;
     if (hoveredPoint) {
+      // hoveredPoint.elevation is in meters, convert to feet
       elevation = hoveredPoint.elevation * FEET_PER_METER;
     }
     
