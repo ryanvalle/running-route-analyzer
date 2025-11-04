@@ -1,19 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { RoutePoint } from '@/types';
 
 interface StravaInputProps {
   onFetch: (points: RoutePoint[]) => void;
 }
 
+interface StravaActivity {
+  id: number;
+  name: string;
+  distance: number;
+  start_date: string;
+  elapsed_time: number;
+  type: string;
+  workout_type: number | null;
+}
+
 export default function StravaInput({ onFetch }: StravaInputProps) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [activities, setActivities] = useState<StravaActivity[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(false);
+
+  const fetchActivities = useCallback(async () => {
+    setLoadingActivities(true);
+    try {
+      const response = await fetch('/api/strava/activities');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setActivities(data.activities);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activities:', err);
+    } finally {
+      setLoadingActivities(false);
+    }
+  }, []);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/strava/auth-status');
+      const data = await response.json();
+      setAuthenticated(data.authenticated && data.configured);
+      
+      // If authenticated, fetch activities
+      if (data.authenticated && data.configured) {
+        fetchActivities();
+      }
+    } catch (err) {
+      console.error('Failed to check auth status:', err);
+      setAuthenticated(false);
+    }
+  }, [fetchActivities]);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await fetchActivityByUrl(url);
+  };
+
+  const fetchActivityByUrl = async (activityUrl: string) => {
     setLoading(true);
     setError(null);
 
@@ -23,7 +77,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ activityUrl: url }),
+        body: JSON.stringify({ activityUrl }),
       });
 
       const data = await response.json();
@@ -44,8 +98,52 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
     }
   };
 
+  const handleQuickSelect = async (activityId: number) => {
+    const activityUrl = `https://www.strava.com/activities/${activityId}`;
+    await fetchActivityByUrl(activityUrl);
+  };
+
+  const handleLogin = () => {
+    window.location.href = '/api/auth/strava';
+  };
+
+  // Show login button if not authenticated
+  if (authenticated === false) {
+    return (
+      <div className="w-full">
+        <button
+          onClick={handleLogin}
+          className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-semibold"
+        >
+          Login to Strava
+        </button>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Connect your Strava account to analyze your activities
+        </p>
+      </div>
+    );
+  }
+
+  // Show loading state while checking auth
+  if (authenticated === null) {
+    return (
+      <div className="w-full text-center text-gray-600 dark:text-gray-400">
+        Checking authentication...
+      </div>
+    );
+  }
+
+  // Get recent runs and races for quick select
+  const recentRuns = activities
+    .filter((a) => !a.workout_type || a.workout_type === 0)
+    .slice(0, 5);
+  const recentRaces = activities
+    .filter((a) => a.workout_type === 1)
+    .slice(0, 3);
+
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
+      {/* URL Input Form */}
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
@@ -63,8 +161,64 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
           {loading ? 'Loading...' : 'Analyze'}
         </button>
       </form>
+
+      {/* Quick Select Buttons */}
+      {!loadingActivities && (recentRuns.length > 0 || recentRaces.length > 0) && (
+        <div className="space-y-3">
+          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Quick Select:
+          </div>
+          
+          {recentRuns.length > 0 && (
+            <div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                Recent Runs
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentRuns.map((activity) => (
+                  <button
+                    key={activity.id}
+                    onClick={() => handleQuickSelect(activity.id)}
+                    disabled={loading}
+                    className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {activity.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {recentRaces.length > 0 && (
+            <div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                Recent Races
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recentRaces.map((activity) => (
+                  <button
+                    key={activity.id}
+                    onClick={() => handleQuickSelect(activity.id)}
+                    disabled={loading}
+                    className="px-3 py-1.5 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded hover:bg-orange-200 dark:hover:bg-orange-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {activity.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {loadingActivities && (
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Loading activities...
+        </div>
+      )}
+
       {error && (
-        <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">{error}</p>
+        <p className="text-sm text-yellow-600 dark:text-yellow-400">{error}</p>
       )}
     </div>
   );
