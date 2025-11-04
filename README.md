@@ -31,12 +31,29 @@ cd running-route-analyzer
 npm install
 ```
 
-3. Run the development server:
+3. (Optional) Configure Strava API for real activity data:
+```bash
+# Copy the example environment file
+cp .env.example .env.local
+
+# Edit .env.local and add your Strava API credentials:
+# STRAVA_CLIENT_ID=your_client_id
+# STRAVA_CLIENT_SECRET=your_client_secret
+# STRAVA_REDIRECT_URI=http://localhost:3000/api/auth/strava/callback
+```
+
+To get Strava API credentials:
+- Go to https://www.strava.com/settings/api
+- Create a new application
+- Use `http://localhost:3000/api/auth/strava/callback` as the Authorization Callback Domain
+- Copy the Client ID and Client Secret to your `.env.local` file
+
+4. Run the development server:
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ### Building for Production
 
@@ -52,7 +69,12 @@ This app is optimized for deployment on Vercel:
 1. Push your code to GitHub
 2. Import your repository in [Vercel](https://vercel.com)
 3. Vercel will automatically detect Next.js and configure the build settings
-4. Deploy!
+4. (Optional) Add environment variables in Vercel project settings:
+   - `STRAVA_CLIENT_ID`
+   - `STRAVA_CLIENT_SECRET`
+   - `STRAVA_REDIRECT_URI` (e.g., `https://your-domain.vercel.app/api/auth/strava/callback`)
+5. Update your Strava API application's Authorization Callback Domain to match your Vercel domain
+6. Deploy!
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ryanvalle/running-route-analyzer)
 
@@ -60,15 +82,21 @@ This app is optimized for deployment on Vercel:
 
 ### Analyzing a Strava Activity
 
-1. Go to your Strava activity page
-2. Copy the activity URL (e.g., `https://www.strava.com/activities/123456`)
-3. Paste it into the "From Strava Activity" input field
-4. Click "Analyze"
+#### With OAuth (Real Strava Data)
+If you've configured Strava API credentials:
+1. Visit `/api/auth/strava` to authenticate with your Strava account
+2. Authorize the application to access your Strava activities
+3. Once authenticated, go to any Strava activity page
+4. Copy the activity URL (e.g., `https://www.strava.com/activities/123456`)
+5. Paste it into the "From Strava Activity" input field
+6. Click "Analyze" to get real GPS and elevation data
 
-**Note**: The Strava integration currently runs in demo mode with mock data. To use real Strava data:
-1. Create a Strava API application at https://www.strava.com/settings/api
-2. Add environment variables: `STRAVA_CLIENT_ID` and `STRAVA_CLIENT_SECRET`
-3. Implement OAuth flow in `/app/api/strava/route.ts`
+#### Demo Mode
+Without Strava API credentials configured:
+1. Copy any Strava activity URL (e.g., `https://www.strava.com/activities/123456`)
+2. Paste it into the "From Strava Activity" input field
+3. Click "Analyze"
+4. The app will generate mock data for demonstration purposes
 
 ### Uploading a FIT File
 
@@ -96,7 +124,7 @@ Example output:
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
 - **FIT File Parsing**: fit-file-parser
-- **Strava Integration**: strava-v3 (for future real integration)
+- **Strava Integration**: Strava API v3 with OAuth 2.0
 
 ## Project Structure
 
@@ -104,11 +132,13 @@ Example output:
 running-route-analyzer/
 ├── app/
 │   ├── api/
-│   │   ├── analyze/      # Route analysis endpoint
-│   │   ├── fit-upload/   # FIT file upload handler
-│   │   └── strava/       # Strava API integration
+│   │   ├── analyze/           # Route analysis endpoint
+│   │   ├── auth/
+│   │   │   └── strava/        # Strava OAuth endpoints
+│   │   ├── fit-upload/        # FIT file upload handler
+│   │   └── strava/            # Strava API integration
 │   ├── layout.tsx
-│   └── page.tsx          # Main application page
+│   └── page.tsx               # Main application page
 ├── components/
 │   ├── FileUpload.tsx           # FIT file upload component
 │   ├── StravaInput.tsx          # Strava URL input component
@@ -167,13 +197,40 @@ Uploads and parses a FIT file.
 }
 ```
 
+### GET `/api/auth/strava`
+Initiates Strava OAuth flow. Redirects user to Strava authorization page.
+
+### GET `/api/auth/strava/callback`
+Handles OAuth callback from Strava. Exchanges authorization code for access tokens and stores them in secure HTTP-only cookies.
+
 ### POST `/api/strava`
-Fetches route data from Strava activity (demo mode).
+Fetches route data from Strava activity. Uses OAuth tokens if configured, otherwise returns demo data.
 
 **Request:**
 ```json
 {
   "activityUrl": "https://www.strava.com/activities/123456"
+}
+```
+
+**Response (with OAuth):**
+```json
+{
+  "success": true,
+  "points": [...],
+  "demo": false,
+  "activityId": "123456",
+  "activityName": "Morning Run"
+}
+```
+
+**Response (demo mode):**
+```json
+{
+  "success": true,
+  "points": [...],
+  "demo": true,
+  "message": "Using demo data. To use real Strava data, configure Strava API credentials."
 }
 ```
 
