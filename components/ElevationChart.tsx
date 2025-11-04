@@ -10,9 +10,11 @@ const CHART_HEIGHT = 200;
 
 interface ElevationChartProps {
   points: RoutePoint[];
+  segments?: Array<{ startMile: number; endMile: number }>;
+  hoveredSegmentIndex?: number | null;
 }
 
-export default function ElevationChart({ points }: ElevationChartProps) {
+export default function ElevationChart({ points, segments, hoveredSegmentIndex }: ElevationChartProps) {
   // Process points for display
   const chartData = useMemo(() => {
     if (!points || points.length === 0) return [];
@@ -74,6 +76,37 @@ export default function ElevationChart({ points }: ElevationChartProps) {
     return `M 0,${CHART_HEIGHT} L ${points.join(' L ')} L ${CHART_WIDTH},${CHART_HEIGHT} Z`;
   }, [chartData, minElevation, elevationRange]);
 
+  // Create highlighted segment area path
+  const highlightedSegmentPath = useMemo(() => {
+    if (chartData.length === 0 || !segments || hoveredSegmentIndex === null || hoveredSegmentIndex === undefined) {
+      return null;
+    }
+    
+    const segment = segments[hoveredSegmentIndex];
+    if (!segment) return null;
+    
+    const maxDistance = chartData[chartData.length - 1].distance;
+    
+    // Filter points within the segment
+    const segmentPoints = chartData.filter(d => 
+      d.distance >= segment.startMile && d.distance <= segment.endMile
+    );
+    
+    if (segmentPoints.length === 0) return null;
+    
+    const points = segmentPoints.map(d => {
+      const x = (d.distance / maxDistance) * CHART_WIDTH;
+      const y = CHART_HEIGHT - ((d.elevation - minElevation) / elevationRange) * CHART_HEIGHT;
+      return `${x},${y}`;
+    });
+    
+    // Create filled area for segment
+    const startX = (segment.startMile / maxDistance) * CHART_WIDTH;
+    const endX = (segment.endMile / maxDistance) * CHART_WIDTH;
+    
+    return `M ${startX},${CHART_HEIGHT} L ${points.join(' L ')} L ${endX},${CHART_HEIGHT} Z`;
+  }, [chartData, segments, hoveredSegmentIndex, minElevation, elevationRange]);
+
   if (chartData.length === 0) {
     return (
       <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -116,6 +149,16 @@ export default function ElevationChart({ points }: ElevationChartProps) {
             className="text-blue-200 dark:text-blue-900"
             opacity="0.5"
           />
+          
+          {/* Highlighted segment area */}
+          {highlightedSegmentPath && (
+            <path
+              d={highlightedSegmentPath}
+              fill="currentColor"
+              className="text-red-300 dark:text-red-700"
+              opacity="0.7"
+            />
+          )}
           
           {/* Elevation line */}
           <path

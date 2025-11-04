@@ -74,8 +74,8 @@ export default function RouteMap({ points, segments, hoveredSegmentIndex }: Rout
         className="h-full w-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         
         <FitBounds bounds={bounds} />
@@ -85,8 +85,8 @@ export default function RouteMap({ points, segments, hoveredSegmentIndex }: Rout
           positions={routePath}
           pathOptions={{
             color: '#3b82f6',
-            weight: 3,
-            opacity: 0.7,
+            weight: 5,
+            opacity: 0.9,
           }}
         />
         

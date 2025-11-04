@@ -58,14 +58,18 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
 
       {/* Elevation Chart - Full Width */}
       {analysis.points && analysis.points.length > 0 && (
-        <ElevationChart points={analysis.points} />
+        <ElevationChart 
+          points={analysis.points} 
+          segments={analysis.segments}
+          hoveredSegmentIndex={hoveredSegmentIndex}
+        />
       )}
 
       {/* Two Column Layout: Map and Mile-by-Mile */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Route Map - Left Column */}
+        {/* Route Map - Left Column (Sticky) */}
         {analysis.points && analysis.points.length > 0 && (
-          <div>
+          <div className="lg:sticky lg:top-4 lg:self-start">
             <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
               Route Map
             </h2>
