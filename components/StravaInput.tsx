@@ -17,6 +17,10 @@ interface StravaActivity {
   workout_type: number | null;
 }
 
+// Constants for quick select limits
+const MAX_RECENT_RUNS = 5;
+const MAX_RECENT_RACES = 3;
+
 export default function StravaInput({ onFetch }: StravaInputProps) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -136,10 +140,10 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
   // Get recent runs and races for quick select
   const recentRuns = activities
     .filter((a) => !a.workout_type || a.workout_type === 0)
-    .slice(0, 5);
+    .slice(0, MAX_RECENT_RUNS);
   const recentRaces = activities
     .filter((a) => a.workout_type === 1)
-    .slice(0, 3);
+    .slice(0, MAX_RECENT_RACES);
 
   return (
     <div className="w-full space-y-4">
