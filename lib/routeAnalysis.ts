@@ -38,10 +38,33 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
     const startMile = i * milesPerSegment;
     const endMile = Math.min((i + 1) * milesPerSegment, totalDistance);
     
-    const segmentPoints = points.filter(p => {
-      const mile = p.distance * METERS_TO_MILES;
-      return mile >= startMile && mile < endMile;
-    });
+    // Find all points in this mile segment, including one point beyond the end
+    // to properly capture elevation changes at segment boundaries
+    const segmentPoints: RoutePoint[] = [];
+    let firstPointBeyondEnd: RoutePoint | null = null;
+    
+    for (let j = 0; j < points.length; j++) {
+      const mile = points[j].distance * METERS_TO_MILES;
+      
+      // For the first segment, include points >= startMile
+      // For subsequent segments, include points > startMile to avoid double-counting
+      const includeStart = (i === 0 && mile >= startMile) || (i > 0 && mile > startMile);
+      
+      // Include all points within the segment
+      if (includeStart && mile <= endMile) {
+        segmentPoints.push(points[j]);
+      }
+      // Capture the first point beyond the segment end to include elevation changes at the boundary
+      else if (mile > endMile && firstPointBeyondEnd === null) {
+        firstPointBeyondEnd = points[j];
+        break;
+      }
+    }
+    
+    // Add the first point beyond the segment to capture boundary elevation changes
+    if (firstPointBeyondEnd !== null) {
+      segmentPoints.push(firstPointBeyondEnd);
+    }
 
     if (segmentPoints.length < 2) continue;
 
