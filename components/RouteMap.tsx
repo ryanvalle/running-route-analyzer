@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import { LatLngBounds } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { RoutePoint, RouteSegment } from '@/types';
+import { METERS_TO_MILES } from '@/lib/constants';
 
 interface RouteMapProps {
   points: RoutePoint[];
@@ -37,23 +38,24 @@ export default function RouteMap({ points, segments, hoveredSegmentIndex }: Rout
     return new LatLngBounds(latLngs);
   }, [points]);
 
+  // Pre-calculate segment paths for better performance
+  const segmentPaths = useMemo(() => {
+    return segments.map(segment => {
+      const segmentPoints = points.filter(p => {
+        const mile = p.distance * METERS_TO_MILES;
+        return mile >= segment.startMile && mile < segment.endMile;
+      });
+      return segmentPoints.map(p => [p.lat, p.lng] as [number, number]);
+    });
+  }, [segments, points]);
+
   // Get the path for the hovered segment
   const hoveredSegmentPath = useMemo(() => {
-    if (hoveredSegmentIndex === null || !segments[hoveredSegmentIndex]) {
+    if (hoveredSegmentIndex === null || !segmentPaths[hoveredSegmentIndex]) {
       return null;
     }
-
-    const segment = segments[hoveredSegmentIndex];
-    const METERS_TO_MILES = 0.000621371;
-    
-    // Filter points that fall within this segment's mile range
-    const segmentPoints = points.filter(p => {
-      const mile = p.distance * METERS_TO_MILES;
-      return mile >= segment.startMile && mile < segment.endMile;
-    });
-
-    return segmentPoints.map(p => [p.lat, p.lng] as [number, number]);
-  }, [hoveredSegmentIndex, segments, points]);
+    return segmentPaths[hoveredSegmentIndex];
+  }, [hoveredSegmentIndex, segmentPaths]);
 
   if (points.length === 0) {
     return (
