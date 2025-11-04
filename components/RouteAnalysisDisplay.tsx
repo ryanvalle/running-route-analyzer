@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { RouteAnalysis } from '@/types';
+import { RouteAnalysis, RoutePoint } from '@/types';
 import ElevationChart from './ElevationChart';
+import { METERS_TO_MILES } from '@/lib/constants';
 
 // Dynamically import RouteMap to avoid SSR issues with Leaflet
 const RouteMap = dynamic(() => import('./RouteMap'), {
@@ -20,7 +21,31 @@ interface RouteAnalysisDisplayProps {
 }
 
 export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayProps) {
-  const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  const [manualHoveredSegmentIndex, setManualHoveredSegmentIndex] = useState<number | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<RoutePoint | null>(null);
+
+  // Calculate the segment index based on hovered point - memoized to avoid recalculation
+  const hoveredSegmentFromPoint = useMemo(() => {
+    if (!hoveredPoint || !analysis.segments) return -1;
+    
+    const distance = hoveredPoint.distance * METERS_TO_MILES;
+    return analysis.segments.findIndex(segment => 
+      distance >= segment.startMile && distance < segment.endMile
+    );
+  }, [hoveredPoint, analysis.segments]);
+  
+  // Use either the manually hovered segment or the one from chart hover
+  const hoveredSegmentIndex = manualHoveredSegmentIndex !== null 
+    ? manualHoveredSegmentIndex 
+    : (hoveredSegmentFromPoint !== -1 ? hoveredSegmentFromPoint : null);
+
+  const handleChartHover = (point: RoutePoint | null) => {
+    setHoveredPoint(point);
+    // Clear manual segment hover when hovering on chart
+    if (point !== null) {
+      setManualHoveredSegmentIndex(null);
+    }
+  };
 
   return (
     <div className="w-full space-y-6">
@@ -62,6 +87,7 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
           points={analysis.points} 
           segments={analysis.segments}
           hoveredSegmentIndex={hoveredSegmentIndex}
+          onHoverPoint={handleChartHover}
         />
       )}
 
@@ -77,6 +103,7 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
               points={analysis.points}
               segments={analysis.segments}
               hoveredSegmentIndex={hoveredSegmentIndex}
+              hoveredPoint={hoveredPoint}
             />
           </div>
         )}
@@ -92,9 +119,18 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
             {analysis.segments.map((segment, index) => (
               <div
                 key={index}
-                className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                onMouseEnter={() => setHoveredSegmentIndex(index)}
-                onMouseLeave={() => setHoveredSegmentIndex(null)}
+                className={`p-4 transition-colors cursor-pointer ${
+                  hoveredSegmentIndex === index
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-600'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+                onMouseEnter={() => {
+                  setManualHoveredSegmentIndex(index);
+                  setHoveredPoint(null);
+                }}
+                onMouseLeave={() => {
+                  setManualHoveredSegmentIndex(null);
+                }}
               >
                 <div className="flex justify-between items-start mb-2">
                   <div>

@@ -1,20 +1,25 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useEffect, MouseEvent } from 'react';
 import { RoutePoint } from '@/types';
 import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
 // SVG dimensions for the elevation chart
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 200;
+const TOOLTIP_OFFSET_TOP = -45; // Pixels above the cursor for tooltip positioning
 
 interface ElevationChartProps {
   points: RoutePoint[];
   segments?: Array<{ startMile: number; endMile: number }>;
   hoveredSegmentIndex?: number | null;
+  onHoverPoint?: (point: RoutePoint | null) => void;
 }
 
-export default function ElevationChart({ points, segments, hoveredSegmentIndex }: ElevationChartProps) {
+export default function ElevationChart({ points, segments, hoveredSegmentIndex, onHoverPoint }: ElevationChartProps) {
+  const [hoveredDistance, setHoveredDistance] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
   // Process points for display
   const chartData = useMemo(() => {
     if (!points || points.length === 0) return [];
@@ -107,6 +112,79 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex }
     return `M ${startX},${CHART_HEIGHT} L ${points.join(' L ')} L ${endX},${CHART_HEIGHT} Z`;
   }, [chartData, segments, hoveredSegmentIndex, minElevation, elevationRange]);
 
+  // Find closest point to hovered distance
+  const hoveredPoint = useMemo(() => {
+    if (hoveredDistance === null || chartData.length === 0) return null;
+    
+    // Find the point closest to the hovered distance
+    let closestPoint = points[0];
+    let minDiff = Math.abs(points[0].distance * METERS_TO_MILES - hoveredDistance);
+    
+    for (const point of points) {
+      const pointDistance = point.distance * METERS_TO_MILES;
+      const diff = Math.abs(pointDistance - hoveredDistance);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestPoint = point;
+      }
+    }
+    
+    return closestPoint;
+  }, [hoveredDistance, points, chartData.length]);
+
+  // Handle mouse move on chart
+  const handleMouseMove = (e: MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || chartData.length === 0) return;
+    
+    const svg = svgRef.current;
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    
+    // Calculate the distance based on x position
+    const maxDistance = chartData[chartData.length - 1].distance;
+    const relativeX = x / rect.width;
+    const distance = relativeX * maxDistance;
+    
+    setHoveredDistance(distance);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredDistance(null);
+    if (onHoverPoint) {
+      onHoverPoint(null);
+    }
+  };
+
+  // Notify parent when hovered point changes
+  useEffect(() => {
+    if (onHoverPoint) {
+      onHoverPoint(hoveredPoint);
+    }
+  }, [hoveredPoint, onHoverPoint]);
+
+  // Calculate hover cursor position and info
+  const hoverInfo = useMemo(() => {
+    if (hoveredDistance === null || chartData.length === 0) return null;
+    
+    const maxDistance = chartData[chartData.length - 1].distance;
+    const x = (hoveredDistance / maxDistance) * CHART_WIDTH;
+    
+    // Find elevation at this distance
+    let elevation = 0;
+    if (hoveredPoint) {
+      elevation = hoveredPoint.elevation * FEET_PER_METER;
+    }
+    
+    const y = CHART_HEIGHT - ((elevation - minElevation) / elevationRange) * CHART_HEIGHT;
+    
+    return {
+      x,
+      y,
+      distance: hoveredDistance,
+      elevation,
+    };
+  }, [hoveredDistance, chartData, minElevation, elevationRange, hoveredPoint]);
+
   if (chartData.length === 0) {
     return (
       <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -122,11 +200,14 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex }
       <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
         Elevation Profile
       </h2>
-      <div className="w-full">
+      <div className="w-full relative">
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          className="w-full h-auto"
+          className="w-full h-auto cursor-crosshair"
           preserveAspectRatio="none"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
         >
           {/* Background grid */}
           <defs>
@@ -168,7 +249,56 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex }
             strokeWidth="2"
             className="text-blue-600 dark:text-blue-400"
           />
+          
+          {/* Hover cursor line and dot */}
+          {hoverInfo && (
+            <>
+              {/* Vertical line at cursor */}
+              <line
+                x1={hoverInfo.x}
+                y1="0"
+                x2={hoverInfo.x}
+                y2={CHART_HEIGHT}
+                stroke="currentColor"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                className="text-gray-600 dark:text-gray-400"
+              />
+              
+              {/* Dot on the elevation line */}
+              <circle
+                cx={hoverInfo.x}
+                cy={hoverInfo.y}
+                r="5"
+                fill="currentColor"
+                className="text-red-600 dark:text-red-400"
+              />
+              <circle
+                cx={hoverInfo.x}
+                cy={hoverInfo.y}
+                r="3"
+                fill="white"
+              />
+            </>
+          )}
         </svg>
+        
+        {/* Tooltip */}
+        {hoverInfo && (
+          <div
+            className="absolute bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-2 rounded-lg text-sm pointer-events-none shadow-lg"
+            style={{
+              left: `${(hoverInfo.x / CHART_WIDTH) * 100}%`,
+              top: `${TOOLTIP_OFFSET_TOP}px`,
+              transform: 'translateX(-50%)',
+            }}
+            role="tooltip"
+            aria-label={`Elevation ${Math.round(hoverInfo.elevation)} feet at distance ${hoverInfo.distance.toFixed(2)} miles`}
+          >
+            <div className="font-semibold">{hoverInfo.distance.toFixed(2)} mi</div>
+            <div>{Math.round(hoverInfo.elevation)} ft</div>
+          </div>
+        )}
         
         {/* X-axis labels */}
         <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
