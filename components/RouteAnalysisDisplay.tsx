@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { RouteAnalysis, RoutePoint } from '@/types';
 import ElevationChart from './ElevationChart';
@@ -24,12 +24,15 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
   const [manualHoveredSegmentIndex, setManualHoveredSegmentIndex] = useState<number | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<RoutePoint | null>(null);
 
-  // Calculate the segment index based on hovered point
-  const hoveredSegmentFromPoint = hoveredPoint && analysis.segments ? 
-    analysis.segments.findIndex(segment => {
-      const distance = hoveredPoint.distance * METERS_TO_MILES;
-      return distance >= segment.startMile && distance < segment.endMile;
-    }) : -1;
+  // Calculate the segment index based on hovered point - memoized to avoid recalculation
+  const hoveredSegmentFromPoint = useMemo(() => {
+    if (!hoveredPoint || !analysis.segments) return -1;
+    
+    const distance = hoveredPoint.distance * METERS_TO_MILES;
+    return analysis.segments.findIndex(segment => 
+      distance >= segment.startMile && distance < segment.endMile
+    );
+  }, [hoveredPoint, analysis.segments]);
   
   // Use either the manually hovered segment or the one from chart hover
   const hoveredSegmentIndex = manualHoveredSegmentIndex !== null 

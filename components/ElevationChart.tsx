@@ -7,6 +7,7 @@ import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 // SVG dimensions for the elevation chart
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 200;
+const TOOLTIP_OFFSET_TOP = -45; // Pixels above the cursor for tooltip positioning
 
 interface ElevationChartProps {
   points: RoutePoint[];
@@ -288,9 +289,11 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex, 
             className="absolute bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 px-3 py-2 rounded-lg text-sm pointer-events-none shadow-lg"
             style={{
               left: `${(hoverInfo.x / CHART_WIDTH) * 100}%`,
-              top: '-45px',
+              top: `${TOOLTIP_OFFSET_TOP}px`,
               transform: 'translateX(-50%)',
             }}
+            role="tooltip"
+            aria-label={`Elevation ${Math.round(hoverInfo.elevation)} feet at distance ${hoverInfo.distance.toFixed(2)} miles`}
           >
             <div className="font-semibold">{hoverInfo.distance.toFixed(2)} mi</div>
             <div>{Math.round(hoverInfo.elevation)} ft</div>
