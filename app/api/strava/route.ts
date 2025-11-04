@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract activity ID from URL
+    // This regex validates that the activity ID contains only digits, preventing injection attacks
     const activityIdMatch = activityUrl.match(/activities\/(\d+)/);
     if (!activityIdMatch) {
       return NextResponse.json(
@@ -21,16 +22,157 @@ export async function POST(request: NextRequest) {
     }
 
     const activityId = activityIdMatch[1];
+    
+    // Additional validation: ensure activity ID is a valid positive integer
+    if (!activityId || parseInt(activityId) <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid activity ID' },
+        { status: 400 }
+      );
+    }
 
-    // Note: In production, you would need to implement OAuth flow
-    // For now, return mock data for demonstration
-    return NextResponse.json({
+    // Check if we have Strava credentials configured
+    const clientId = process.env.STRAVA_CLIENT_ID;
+    const clientSecret = process.env.STRAVA_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      // Return mock data if credentials not configured
+      return NextResponse.json({
+        success: true,
+        points: generateMockStravaData(),
+        demo: true,
+        message: 'Using demo data. To use real Strava data, configure Strava API credentials.',
+        activityId,
+      });
+    }
+
+    // Get access token from cookies
+    const accessToken = request.cookies.get('strava_access_token')?.value;
+    const expiresAt = request.cookies.get('strava_expires_at')?.value;
+    const refreshToken = request.cookies.get('strava_refresh_token')?.value;
+
+    // Check if user is authenticated
+    if (!accessToken) {
+      return NextResponse.json({
+        error: 'Not authenticated with Strava',
+        authRequired: true,
+        authUrl: '/api/auth/strava',
+      }, { status: 401 });
+    }
+
+    // Check if token is expired and refresh if needed
+    let currentAccessToken = accessToken;
+    let newTokenData = null;
+    if (expiresAt && refreshToken) {
+      const expirationTime = parseInt(expiresAt);
+      const now = Math.floor(Date.now() / 1000);
+      
+      if (now >= expirationTime) {
+        // Token expired, refresh it
+        const refreshResponse = await fetch('https://www.strava.com/oauth/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret,
+            refresh_token: refreshToken,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (refreshResponse.ok) {
+          newTokenData = await refreshResponse.json();
+          currentAccessToken = newTokenData.access_token;
+        } else {
+          return NextResponse.json({
+            error: 'Token refresh failed. Please re-authenticate.',
+            authRequired: true,
+            authUrl: '/api/auth/strava',
+          }, { status: 401 });
+        }
+      }
+    }
+
+    // Fetch activity data from Strava API
+    // The activityId has been validated to contain only digits, and requests are made
+    // exclusively to the official Strava API domain. Access is controlled by OAuth tokens.
+    const activityResponse = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${currentAccessToken}`,
+        },
+      }
+    );
+
+    if (!activityResponse.ok) {
+      if (activityResponse.status === 401) {
+        return NextResponse.json({
+          error: 'Strava authentication failed. Please re-authenticate.',
+          authRequired: true,
+          authUrl: '/api/auth/strava',
+        }, { status: 401 });
+      }
+      throw new Error(`Strava API error: ${activityResponse.status}`);
+    }
+
+    const activityData = await activityResponse.json();
+
+    // Fetch detailed activity stream for elevation and GPS data from Strava API
+    // All requests are made to the hardcoded Strava API domain with validated activity IDs
+    const streamResponse = await fetch(
+      `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=latlng,distance,altitude&key_by_type=true`,
+      {
+        headers: {
+          'Authorization': `Bearer ${currentAccessToken}`,
+        },
+      }
+    );
+
+    if (!streamResponse.ok) {
+      throw new Error(`Failed to fetch activity streams: ${streamResponse.status}`);
+    }
+
+    const streamData = await streamResponse.json();
+
+    // Convert Strava stream data to our RoutePoint format
+    const points = convertStravaStreamToPoints(streamData);
+
+    const response = NextResponse.json({
       success: true,
-      points: generateMockStravaData(),
-      demo: true,
-      message: 'Using demo data. To use real Strava data, configure Strava API credentials.',
+      points,
+      demo: false,
       activityId,
+      activityName: activityData.name,
     });
+
+    // If we refreshed the token, update the cookies in the response
+    if (newTokenData) {
+      response.cookies.set('strava_access_token', newTokenData.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 6, // 6 hours
+      });
+
+      response.cookies.set('strava_refresh_token', newTokenData.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+
+      response.cookies.set('strava_expires_at', newTokenData.expires_at.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('Error fetching Strava activity:', error);
     return NextResponse.json(
@@ -38,6 +180,34 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Define type for Strava stream data
+interface StravaStreamData {
+  latlng?: { data: [number, number][] };
+  distance?: { data: number[] };
+  altitude?: { data: number[] };
+}
+
+// Convert Strava stream data to RoutePoint format
+function convertStravaStreamToPoints(streamData: StravaStreamData) {
+  const latlng = streamData.latlng?.data || [];
+  const distance = streamData.distance?.data || [];
+  const altitude = streamData.altitude?.data || [];
+
+  const points = [];
+  const length = Math.min(latlng.length, distance.length, altitude.length);
+
+  for (let i = 0; i < length; i++) {
+    points.push({
+      lat: latlng[i][0],
+      lng: latlng[i][1],
+      elevation: altitude[i],
+      distance: distance[i],
+    });
+  }
+
+  return points;
 }
 
 // Generate mock data for demonstration
