@@ -29,19 +29,17 @@ async function resolveUrl(url: string): Promise<string> {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       try {
+        console.log(url);
         const response = await fetch(url, {
           method: 'GET',
-          redirect: 'follow',
-          signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; StravaAnalyzer/1.0)',
-          },
+          redirect: 'follow'
         });
         
         clearTimeout(timeoutId);
         
-        // Validate that the resolved URL is a Strava domain for additional security
-        const resolvedUrl = response.url;
+        // Get the resolved URL from the Location header
+        console.log(response);
+        const resolvedUrl = response.headers.get('location') || url;
         console.log('Short link resolved to:', resolvedUrl);
         
         const resolvedParsedUrl = new URL(resolvedUrl);
@@ -99,7 +97,7 @@ export async function POST(request: NextRequest) {
     if (!activityIdMatch) {
       console.error('Failed to extract activity ID from URL:', resolvedUrl);
       return NextResponse.json(
-        { error: `Invalid Strava activity URL. Could not extract activity ID from: ${resolvedUrl}` },
+        { error: `Invalid Strava activity URL. Could not extract activity ID from short link: ${resolvedUrl}. Use web link instead` },
         { status: 400 }
       );
     }
