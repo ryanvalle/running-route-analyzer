@@ -61,10 +61,10 @@ function HomeContent() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Running Route Analyzer
+            Route Analyzer
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Analyze your running routes from Strava or FIT files
+            Analyze your routes from Strava or FIT files
           </p>
         </div>
 
