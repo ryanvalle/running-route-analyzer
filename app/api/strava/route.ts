@@ -40,7 +40,17 @@ async function resolveUrl(url: string): Promise<string> {
         // Validate that the resolved URL is a Strava domain for additional security
         const resolvedUrl = response.url;
         const resolvedParsedUrl = new URL(resolvedUrl);
-        if (resolvedParsedUrl.hostname.toLowerCase().endsWith('strava.com')) {
+        const hostname = resolvedParsedUrl.hostname.toLowerCase();
+        
+        // Only allow exact strava.com or legitimate *.strava.com subdomains
+        // Use split to ensure we're checking the actual domain components
+        const parts = hostname.split('.');
+        const isValidStravaDomain = 
+          hostname === 'strava.com' || 
+          hostname === 'www.strava.com' ||
+          (parts.length >= 2 && parts[parts.length - 2] === 'strava' && parts[parts.length - 1] === 'com');
+        
+        if (isValidStravaDomain) {
           return resolvedUrl;
         }
         
