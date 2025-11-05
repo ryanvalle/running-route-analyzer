@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Running Route Analyzer",
-  description: "Analyze your running routes from Strava activities or FIT files with detailed elevation and terrain breakdowns",
+  title: "Route Analyzer",
+  description: "Analyze your routes from Strava activities or FIT files with detailed elevation and terrain breakdowns",
 };
 
 export default function RootLayout({

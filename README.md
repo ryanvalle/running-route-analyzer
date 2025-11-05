@@ -1,13 +1,13 @@
-# Running Route Analyzer
+# Route Analyzer
 
-A Next.js application that analyzes running routes from Strava activities or uploaded FIT files, providing detailed elevation profiles and terrain summaries.
+A Next.js application that analyzes routes from Strava activities or uploaded FIT files, providing detailed elevation profiles and terrain summaries.
 
 ## Features
 
-- 📊 **Route Analysis**: Get detailed mile-by-mile breakdowns of your running routes
+- 📊 **Route Analysis**: Get detailed mile-by-mile breakdowns of routes
 - 🏔️ **Elevation Profiles**: See elevation gain, loss, and grade for each segment
 - 🔗 **Strava Integration**: Analyze routes directly from Strava activity URLs (demo mode included)
-- 📁 **FIT File Support**: Upload FIT files from your GPS running watch
+- 📁 **FIT File Support**: Upload FIT files from your GPS device or watch
 - 🌓 **Dark Mode**: Fully responsive design with dark mode support
 - ⚡ **Fast**: Built with Next.js 16 for optimal performance
 
