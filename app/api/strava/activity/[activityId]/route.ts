@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, getCacheKey } from '@/lib/cache';
 import { analyzeRoute } from '@/lib/routeAnalysis';
-import { RoutePoint } from '@/types';
+import { RoutePoint, RouteAnalysis } from '@/types';
+
+// Interface for cached activity data
+interface CachedActivityData {
+  points: RoutePoint[];
+  activityName: string;
+  athleteId: number;
+  analysis: RouteAnalysis;
+}
 
 // This endpoint fetches and caches Strava activity data
 // Cache TTL: 1 hour
@@ -21,12 +29,7 @@ export async function GET(
 
     // Check cache first
     const cacheKey = getCacheKey.stravaActivity(activityId);
-    const cachedData = cache.get<{
-      points: RoutePoint[];
-      activityName: string;
-      athleteId: number;
-      analysis: unknown;
-    }>(cacheKey);
+    const cachedData = cache.get<CachedActivityData>(cacheKey);
 
     if (cachedData) {
       return NextResponse.json({
@@ -44,12 +47,7 @@ export async function GET(
     if (!clientId || !clientSecret) {
       // Return mock data if credentials not configured
       // Check cache first for demo data too
-      const cachedDemo = cache.get<{
-        points: RoutePoint[];
-        activityName: string;
-        athleteId: number;
-        analysis: unknown;
-      }>(cacheKey);
+      const cachedDemo = cache.get<CachedActivityData>(cacheKey);
 
       if (cachedDemo) {
         return NextResponse.json({

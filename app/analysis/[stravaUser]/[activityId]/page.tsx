@@ -85,9 +85,12 @@ export default function AnalysisPage({ params }: PageProps) {
     fetchData();
   }, [activityId, stravaUser, router]);
 
+  const [copySuccess, setCopySuccess] = useState(false);
+
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Link copied to clipboard!');
+    setCopySuccess(true);
+    setTimeout(() => setCopySuccess(false), 3000);
   };
 
   if (loading) {
@@ -158,19 +161,20 @@ export default function AnalysisPage({ params }: PageProps) {
             </div>
             <button
               onClick={handleCopyLink}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+              className={`px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
+                copySuccess
+                  ? 'bg-green-600 hover:bg-green-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              } text-white`}
             >
-              Copy Link
+              {copySuccess ? '✓ Copied!' : 'Copy Link'}
             </button>
           </div>
         </div>
 
         {/* Analysis Results */}
         <RouteAnalysisDisplay 
-          analysis={{
-            ...activityData.analysis,
-            points: activityData.points,
-          }} 
+          analysis={activityData.analysis} 
         />
       </div>
     </div>
