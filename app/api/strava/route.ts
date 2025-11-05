@@ -10,6 +10,20 @@ async function resolveUrl(url: string): Promise<string> {
     // Check if this is a Strava short link (normalize to lowercase for case-insensitive comparison)
     const normalizedUrl = url.toLowerCase();
     if (normalizedUrl.startsWith('https://strava.app.link/') || normalizedUrl.startsWith('http://strava.app.link/')) {
+      // Validate the URL format before making the request (SSRF protection)
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        // If URL parsing fails, return the original URL
+        return url;
+      }
+      
+      // Only allow strava.app.link domain to prevent SSRF attacks
+      if (parsedUrl.hostname.toLowerCase() !== 'strava.app.link') {
+        return url;
+      }
+      
       // Follow the redirect to get the final URL with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -23,8 +37,15 @@ async function resolveUrl(url: string): Promise<string> {
         
         clearTimeout(timeoutId);
         
-        // Return the final URL after following redirects
-        return response.url;
+        // Validate that the resolved URL is a Strava domain for additional security
+        const resolvedUrl = response.url;
+        const resolvedParsedUrl = new URL(resolvedUrl);
+        if (resolvedParsedUrl.hostname.toLowerCase().endsWith('strava.com')) {
+          return resolvedUrl;
+        }
+        
+        // If the resolved URL is not a Strava domain, return the original URL
+        return url;
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
