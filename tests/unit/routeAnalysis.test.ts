@@ -212,7 +212,8 @@ describe('routeAnalysis', () => {
     });
 
     it('should handle decimal values', () => {
-      expect(metersToMiles(804.672)).toBeCloseTo(0.5, 2);
+      // Use exact conversion factor to avoid precision issues
+      expect(metersToMiles(1609.344 / 2)).toBeCloseTo(0.5, 5);
     });
   });
 
