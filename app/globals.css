@@ -24,3 +24,81 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* AI Coaching Insights Styles */
+.ai-insights-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+  line-height: 1.75rem;
+}
+
+.ai-insights-content h3:first-child {
+  margin-top: 0;
+}
+
+.ai-insights-content h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  line-height: 1.5rem;
+}
+
+.ai-insights-content p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.75;
+  color: #374151;
+}
+
+.ai-insights-content ul,
+.ai-insights-content ol {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.ai-insights-content ol {
+  list-style-type: decimal;
+}
+
+.ai-insights-content li {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.75;
+  color: #374151;
+}
+
+.ai-insights-content strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.ai-insights-content em {
+  font-style: italic;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .ai-insights-content h3 {
+    color: #f9fafb;
+  }
+
+  .ai-insights-content h4 {
+    color: #e5e7eb;
+  }
+
+  .ai-insights-content p,
+  .ai-insights-content li {
+    color: #d1d5db;
+  }
+
+  .ai-insights-content strong {
+    color: #f3f4f6;
+  }
+}

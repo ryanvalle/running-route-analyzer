@@ -32,7 +32,10 @@ function HomeContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ points }),
+        body: JSON.stringify({ 
+          points,
+          activityId: activityInfo?.activityId,
+        }),
       });
 
       const data = await response.json();
