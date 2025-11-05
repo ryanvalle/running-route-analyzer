@@ -43,14 +43,43 @@ export async function GET(
 
     if (!clientId || !clientSecret) {
       // Return mock data if credentials not configured
+      // Check cache first for demo data too
+      const cachedDemo = cache.get<{
+        points: RoutePoint[];
+        activityName: string;
+        athleteId: number;
+        analysis: unknown;
+      }>(cacheKey);
+
+      if (cachedDemo) {
+        return NextResponse.json({
+          success: true,
+          ...cachedDemo,
+          demo: true,
+          cached: true,
+          activityId,
+          message: 'Using cached demo data.',
+        });
+      }
+
       const mockPoints = generateMockStravaData();
       const mockAnalysis = analyzeRoute(mockPoints);
+
+      // Cache demo data as well
+      const demoData = {
+        points: mockPoints,
+        activityName: 'Demo Activity',
+        athleteId: 0,
+        analysis: mockAnalysis,
+      };
+      cache.set(cacheKey, demoData);
 
       return NextResponse.json({
         success: true,
         points: mockPoints,
         analysis: mockAnalysis,
         demo: true,
+        cached: false,
         message: 'Using demo data. To use real Strava data, configure Strava API credentials.',
         activityId,
         athleteId: '0',

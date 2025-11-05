@@ -26,6 +26,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [configured, setConfigured] = useState<boolean>(true);
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
 
@@ -49,6 +50,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
     try {
       const response = await fetch('/api/strava/auth-status');
       const data = await response.json();
+      setConfigured(data.configured);
       setAuthenticated(data.authenticated && data.configured);
       
       // If authenticated, fetch activities
@@ -58,6 +60,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
     } catch (err) {
       console.error('Failed to check auth status:', err);
       setAuthenticated(false);
+      setConfigured(true);
     }
   }, [fetchActivities]);
 
@@ -117,8 +120,8 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
     window.location.href = '/api/auth/strava';
   };
 
-  // Show login button if not authenticated
-  if (authenticated === false) {
+  // Show login button if configured but not authenticated
+  if (configured && authenticated === false) {
     return (
       <div className="w-full">
         <button

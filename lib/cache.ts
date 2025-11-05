@@ -15,7 +15,7 @@ class Cache {
     this.defaultTTL = defaultTTL;
   }
 
-  set<T>(key: string, value: T, ttl?: number): void {
+  set<T>(key: string, value: T): void {
     this.store.set(key, {
       data: value,
       timestamp: Date.now(),

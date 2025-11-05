@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import RouteAnalysisDisplay from '@/components/RouteAnalysisDisplay';
 import { RouteAnalysis, RoutePoint } from '@/types';
 
@@ -107,12 +108,12 @@ export default function AnalysisPage({ params }: PageProps) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             {error || 'Activity not found'}
           </h1>
-          <a
+          <Link
             href="/"
             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             ← Go back to home
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -135,12 +136,12 @@ export default function AnalysisPage({ params }: PageProps) {
             )}
           </p>
           <div className="mt-4">
-            <a
+            <Link
               href="/"
               className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               ← Analyze another route
-            </a>
+            </Link>
           </div>
         </div>
 
