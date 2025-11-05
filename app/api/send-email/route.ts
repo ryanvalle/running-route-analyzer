@@ -171,20 +171,24 @@ function generateEmailHTML(analysis: RouteAnalysis, mapImage: string, chartImage
         </div>
 
         <!-- Elevation Chart -->
+        ${chartImage ? `
         <div style="margin-bottom: 24px;">
           <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">
             Elevation Profile
           </h2>
           <img src="${chartImage}" alt="Elevation Chart" style="width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 8px;" />
         </div>
+        ` : ''}
 
         <!-- Route Map -->
+        ${mapImage ? `
         <div style="margin-bottom: 24px;">
           <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">
             Route Map
           </h2>
           <img src="${mapImage}" alt="Route Map" style="width: 100%; height: auto; border: 1px solid #e5e7eb; border-radius: 8px;" />
         </div>
+        ` : ''}
 
         <!-- Mile-by-Mile Breakdown -->
         <div style="margin-bottom: 24px;">

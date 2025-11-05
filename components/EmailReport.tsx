@@ -46,18 +46,28 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
     setSuccess(false);
 
     try {
-      // Capture map screenshot
+      // Capture map screenshot (optional - may fail with Leaflet)
       let mapImage = '';
       if (mapContainerRef?.current) {
-        const mapElement = mapContainerRef.current;
-        mapImage = await captureScreenshot(mapElement);
+        try {
+          const mapElement = mapContainerRef.current;
+          mapImage = await captureScreenshot(mapElement);
+        } catch (mapError) {
+          console.warn('Failed to capture map screenshot:', mapError);
+          // Continue without map image
+        }
       }
 
       // Capture chart screenshot
       let chartImage = '';
       if (chartContainerRef?.current) {
-        const chartElement = chartContainerRef.current;
-        chartImage = await captureScreenshot(chartElement);
+        try {
+          const chartElement = chartContainerRef.current;
+          chartImage = await captureScreenshot(chartElement);
+        } catch (chartError) {
+          console.warn('Failed to capture chart screenshot:', chartError);
+          // Continue without chart image
+        }
       }
 
       // Send email request
@@ -88,6 +98,7 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
         setSuccess(false);
       }, 3000);
     } catch (err) {
+      console.error('Error sending email:', err);
       setError(err instanceof Error ? err.message : 'Failed to send email');
     } finally {
       setSending(false);
