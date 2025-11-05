@@ -79,7 +79,7 @@ describe('openai', () => {
             },
           },
         ],
-      } as any);
+      } as never);
 
       const result = await getAICoachingInsights(mockAnalysis);
       
@@ -107,7 +107,7 @@ describe('openai', () => {
             },
           },
         ],
-      } as any);
+      } as never);
 
       const activityId = '123456';
       const cacheKey = getCacheKey.aiCoachingInsights(activityId);
@@ -140,7 +140,7 @@ describe('openai', () => {
             },
           },
         ],
-      } as any);
+      } as never);
 
       // First call
       await getAICoachingInsights(mockAnalysis);
@@ -159,7 +159,7 @@ describe('openai', () => {
       
       mockCreate.mockResolvedValue({
         choices: [],
-      } as any);
+      } as never);
 
       const result = await getAICoachingInsights(mockAnalysis);
       expect(result).toBeNull();
@@ -179,7 +179,7 @@ describe('openai', () => {
             },
           },
         ],
-      } as any);
+      } as never);
 
       const result = await getAICoachingInsights(mockAnalysis);
       expect(result).toBeNull();
@@ -211,7 +211,7 @@ describe('openai', () => {
             },
           },
         ],
-      } as any);
+      } as never);
 
       // Call with string activityId
       await getAICoachingInsights(mockAnalysis, '999');

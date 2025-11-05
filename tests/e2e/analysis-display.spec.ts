@@ -102,8 +102,6 @@ test.describe('Analysis Display', () => {
   test('should render elevation chart when points are available', async ({ page }) => {
     // Look for chart container
     // The chart is rendered with canvas/svg, so we check for its container
-    const chartElements = page.locator('canvas, svg').first();
-    
     // Wait a bit for chart to render
     await page.waitForTimeout(1000);
     

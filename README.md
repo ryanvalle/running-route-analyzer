@@ -245,9 +245,53 @@ Fetches route data from Strava activity. Uses OAuth tokens if configured, otherw
 }
 ```
 
+## Testing
+
+This project includes comprehensive test coverage with both unit tests and end-to-end browser tests.
+
+### Running Tests
+
+```bash
+# Run unit tests
+npm test
+
+# Run unit tests with coverage
+npm run test:coverage
+
+# Run end-to-end tests
+npm run test:e2e
+
+# Run all tests
+npm run test:all
+```
+
+### Test Coverage
+
+- **63 unit tests** covering:
+  - Cache functionality with TTL expiration
+  - Route analysis and data parsing
+  - OpenAI integration
+  - API route handlers
+  
+- **47+ E2E tests** covering:
+  - Page rendering (static and dynamic views)
+  - User interactions and UX
+  - Form validation and submissions
+  - Responsive design
+  - Dark mode support
+  - Caching behavior
+
+See [`tests/README.md`](tests/README.md) for detailed test documentation.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+When contributing:
+1. Add tests for new features
+2. Ensure all tests pass: `npm run test:all`
+3. Follow the existing code style
+4. Update documentation as needed
 
 ## License
 
