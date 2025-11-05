@@ -1,5 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Resolves a URL by following redirects to get the final destination URL
+ * @param url - The URL to resolve (can be a short link)
+ * @returns The final resolved URL after following redirects
+ */
+async function resolveUrl(url: string): Promise<string> {
+  try {
+    // Check if this is a Strava short link
+    if (url.includes('strava.app.link')) {
+      // Follow the redirect manually to get the final URL
+      const response = await fetch(url, {
+        method: 'HEAD',
+        redirect: 'manual',
+      });
+      
+      // Check if we got a redirect
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (location) {
+          return location;
+        }
+      }
+      
+      // If no redirect found, try with GET request
+      const getResponse = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+      });
+      
+      // Return the final URL after following redirects
+      return getResponse.url;
+    }
+    
+    // For regular URLs, return as-is
+    return url;
+  } catch (error) {
+    console.error('Error resolving URL:', error);
+    // If resolution fails, return the original URL
+    return url;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { activityUrl } = await request.json();
@@ -11,9 +53,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve the URL in case it's a short link
+    const resolvedUrl = await resolveUrl(activityUrl);
+
     // Extract activity ID from URL
     // This regex validates that the activity ID contains only digits, preventing injection attacks
-    const activityIdMatch = activityUrl.match(/activities\/(\d+)/);
+    const activityIdMatch = resolvedUrl.match(/activities\/(\d+)/);
     if (!activityIdMatch) {
       return NextResponse.json(
         { error: 'Invalid Strava activity URL' },

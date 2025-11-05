@@ -162,7 +162,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter Strava activity URL (e.g., https://www.strava.com/activities/123456)"
+          placeholder="Enter Strava activity URL or short link (e.g., https://strava.app.link/...)"
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
           disabled={loading}
         />
