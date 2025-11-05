@@ -67,7 +67,8 @@ export async function GET(
       // Get AI coaching insights for demo data too (with caching)
       const aiCoachingInsights = await getAICoachingInsights(mockAnalysis, activityId);
       
-      // Add AI insights to the analysis if available
+      // Add points and AI insights to the analysis object for the map and elevation chart
+      mockAnalysis.points = mockPoints;
       if (aiCoachingInsights) {
         mockAnalysis.aiCoachingInsights = aiCoachingInsights;
       }
@@ -191,7 +192,8 @@ export async function GET(
     // Get AI coaching insights (with caching)
     const aiCoachingInsights = await getAICoachingInsights(analysis, activityId);
     
-    // Add AI insights to the analysis if available
+    // Add points and AI insights to the analysis object for the map and elevation chart
+    analysis.points = points;
     if (aiCoachingInsights) {
       analysis.aiCoachingInsights = aiCoachingInsights;
     }
