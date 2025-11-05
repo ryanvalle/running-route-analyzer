@@ -33,12 +33,17 @@ async function resolveUrl(url: string): Promise<string> {
           method: 'GET',
           redirect: 'follow',
           signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; StravaAnalyzer/1.0)',
+          },
         });
         
         clearTimeout(timeoutId);
         
         // Validate that the resolved URL is a Strava domain for additional security
         const resolvedUrl = response.url;
+        console.log('Short link resolved to:', resolvedUrl);
+        
         const resolvedParsedUrl = new URL(resolvedUrl);
         const hostname = resolvedParsedUrl.hostname.toLowerCase();
         
@@ -54,10 +59,12 @@ async function resolveUrl(url: string): Promise<string> {
           return resolvedUrl;
         }
         
+        console.warn('Resolved URL is not a valid Strava domain:', hostname);
         // If the resolved URL is not a Strava domain, return the original URL
         return url;
       } catch (fetchError) {
         clearTimeout(timeoutId);
+        console.error('Failed to resolve short link:', fetchError);
         throw fetchError;
       }
     }
@@ -84,13 +91,15 @@ export async function POST(request: NextRequest) {
 
     // Resolve the URL in case it's a short link
     const resolvedUrl = await resolveUrl(activityUrl);
+    console.log('Processing URL:', activityUrl, '-> Resolved to:', resolvedUrl);
 
     // Extract activity ID from URL
     // This regex validates that the activity ID contains only digits, preventing injection attacks
     const activityIdMatch = resolvedUrl.match(/activities\/(\d+)/);
     if (!activityIdMatch) {
+      console.error('Failed to extract activity ID from URL:', resolvedUrl);
       return NextResponse.json(
-        { error: 'Invalid Strava activity URL' },
+        { error: `Invalid Strava activity URL. Could not extract activity ID from: ${resolvedUrl}` },
         { status: 400 }
       );
     }
