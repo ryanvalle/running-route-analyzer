@@ -14,13 +14,15 @@ function HomeContent() {
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activityId, setActivityId] = useState<string | null>(null);
+  const [athleteId, setAthleteId] = useState<string | null>(null);
 
   // Check for debug parameter
   useEffect(() => {
     setDebugMode(searchParams.get('debug') === 'true');
   }, [searchParams]);
 
-  const handleRouteData = async (points: RoutePoint[]) => {
+  const handleRouteData = async (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }) => {
     setAnalyzing(true);
     setError(null);
 
@@ -40,6 +42,12 @@ function HomeContent() {
       }
 
       setAnalysis(data.analysis);
+      
+      // Store activity info for shareable link
+      if (activityInfo) {
+        setActivityId(activityInfo.activityId);
+        setAthleteId(activityInfo.athleteId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze route');
     } finally {
@@ -187,6 +195,28 @@ function HomeContent() {
                   </pre>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Shareable Link Section */}
+        {analysis && !analyzing && activityId && athleteId && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  Analysis Complete!
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Your analysis is now available at a shareable URL with 1-hour caching
+                </p>
+              </div>
+              <a
+                href={`/analysis/${athleteId}/${activityId}`}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
+              >
+                View Shareable Page →
+              </a>
             </div>
           </div>
         )}

@@ -1,34 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cache, getCacheKey } from '@/lib/cache';
+import { analyzeRoute } from '@/lib/routeAnalysis';
+import { RoutePoint, RouteAnalysis } from '@/types';
 
-export async function POST(request: NextRequest) {
+// Interface for cached activity data
+interface CachedActivityData {
+  points: RoutePoint[];
+  activityName: string;
+  athleteId: number;
+  analysis: RouteAnalysis;
+}
+
+// This endpoint fetches and caches Strava activity data
+// Cache TTL: 1 hour
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ activityId: string }> }
+) {
   try {
-    const { activityUrl } = await request.json();
+    const { activityId } = await params;
 
-    if (!activityUrl) {
-      return NextResponse.json(
-        { error: 'Activity URL is required' },
-        { status: 400 }
-      );
-    }
-
-    // Extract activity ID from URL
-    // This regex validates that the activity ID contains only digits, preventing injection attacks
-    const activityIdMatch = activityUrl.match(/activities\/(\d+)/);
-    if (!activityIdMatch) {
-      return NextResponse.json(
-        { error: 'Invalid Strava activity URL' },
-        { status: 400 }
-      );
-    }
-
-    const activityId = activityIdMatch[1];
-    
-    // Additional validation: ensure activity ID is a valid positive integer
-    if (!activityId || parseInt(activityId) <= 0) {
+    if (!activityId || !/^\d+$/.test(activityId)) {
       return NextResponse.json(
         { error: 'Invalid activity ID' },
         { status: 400 }
       );
+    }
+
+    // Check cache first
+    const cacheKey = getCacheKey.stravaActivity(activityId);
+    const cachedData = cache.get<CachedActivityData>(cacheKey);
+
+    if (cachedData) {
+      return NextResponse.json({
+        success: true,
+        ...cachedData,
+        cached: true,
+        activityId,
+      });
     }
 
     // Check if we have Strava credentials configured
@@ -37,13 +46,42 @@ export async function POST(request: NextRequest) {
 
     if (!clientId || !clientSecret) {
       // Return mock data if credentials not configured
+      // Check cache first for demo data too
+      const cachedDemo = cache.get<CachedActivityData>(cacheKey);
+
+      if (cachedDemo) {
+        return NextResponse.json({
+          success: true,
+          ...cachedDemo,
+          demo: true,
+          cached: true,
+          activityId,
+          message: 'Using cached demo data.',
+        });
+      }
+
+      const mockPoints = generateMockStravaData();
+      const mockAnalysis = analyzeRoute(mockPoints);
+
+      // Cache demo data as well
+      const demoData = {
+        points: mockPoints,
+        activityName: 'Demo Activity',
+        athleteId: 0,
+        analysis: mockAnalysis,
+      };
+      cache.set(cacheKey, demoData);
+
       return NextResponse.json({
         success: true,
-        points: generateMockStravaData(),
+        points: mockPoints,
+        analysis: mockAnalysis,
         demo: true,
+        cached: false,
         message: 'Using demo data. To use real Strava data, configure Strava API credentials.',
         activityId,
         athleteId: '0',
+        activityName: 'Demo Activity',
       });
     }
 
@@ -97,8 +135,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch activity data from Strava API
-    // The activityId has been validated to contain only digits, and requests are made
-    // exclusively to the official Strava API domain. Access is controlled by OAuth tokens.
     const activityResponse = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}`,
       {
@@ -121,8 +157,7 @@ export async function POST(request: NextRequest) {
 
     const activityData = await activityResponse.json();
 
-    // Fetch detailed activity stream for elevation and GPS data from Strava API
-    // All requests are made to the hardcoded Strava API domain with validated activity IDs
+    // Fetch detailed activity stream for elevation and GPS data
     const streamResponse = await fetch(
       `https://www.strava.com/api/v3/activities/${activityId}/streams?keys=latlng,distance,altitude&key_by_type=true`,
       {
@@ -141,13 +176,24 @@ export async function POST(request: NextRequest) {
     // Convert Strava stream data to our RoutePoint format
     const points = convertStravaStreamToPoints(streamData);
 
-    const response = NextResponse.json({
-      success: true,
+    // Analyze the route
+    const analysis = analyzeRoute(points);
+
+    // Cache the data
+    const dataToCache = {
       points,
-      demo: false,
-      activityId,
       activityName: activityData.name,
       athleteId: activityData.athlete?.id || 0,
+      analysis,
+    };
+    cache.set(cacheKey, dataToCache);
+
+    const response = NextResponse.json({
+      success: true,
+      ...dataToCache,
+      demo: false,
+      activityId,
+      cached: false,
     });
 
     // If we refreshed the token, update the cookies in the response
