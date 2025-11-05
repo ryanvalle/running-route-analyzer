@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { RoutePoint } from '@/types';
 
 interface StravaInputProps {
-  onFetch: (points: RoutePoint[]) => void;
+  onFetch: (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }) => void;
 }
 
 interface StravaActivity {
@@ -94,7 +94,13 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
         setError('Using demo data (Strava API not configured)');
       }
 
-      onFetch(data.points);
+      // Pass activity info for shareable link generation
+      const activityInfo = data.activityId && data.athleteId ? {
+        activityId: data.activityId.toString(),
+        athleteId: data.athleteId.toString(),
+      } : undefined;
+
+      onFetch(data.points, activityInfo);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch activity');
     } finally {
