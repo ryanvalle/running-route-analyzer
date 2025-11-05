@@ -16,35 +16,39 @@ Your analysis should be:
 - Practical and actionable
 - Encouraging but realistic about challenges
 - Focused on helping the runner finish strong
-- Written in a conversational, supportive coaching tone`;
+- Written in a conversational, supportive coaching tone
+
+IMPORTANT: Format your response as clean, semantic HTML. Use <h3> for section headers, <p> for paragraphs, <ul> and <li> for bullet lists, and <strong> for emphasis. Do not include <html>, <head>, or <body> tags - only the content HTML that will be inserted into a div.`;
 
 export const FITNESS_COACH_USER_PROMPT_TEMPLATE = `Please analyze this running route and provide coaching insights:
 
-**Route Statistics:**
-- Total Distance: {totalDistance} miles
-- Total Elevation Gain: {totalElevationGain} feet
-- Total Elevation Loss: {totalElevationLoss} feet
+<strong>Route Statistics:</strong>
+<ul>
+<li>Total Distance: {totalDistance} miles</li>
+<li>Total Elevation Gain: {totalElevationGain} feet</li>
+<li>Total Elevation Loss: {totalElevationLoss} feet</li>
+</ul>
 
-**Mile-by-Mile Breakdown:**
-{segmentDetails}
+<strong>Mile-by-Mile Breakdown:</strong>
+<pre>{segmentDetails}</pre>
 
-Based on this data, please provide:
+Based on this data, please provide your analysis in HTML format with the following structure:
 
-1. **Route Overview**: A brief summary describing whether this is a relatively flat, hilly, or mixed terrain route. Mention any specific miles where terrain changes significantly (e.g., "mostly flat but expect hills around mile 4").
+<h3>Route Overview</h3>
+<p>A brief summary describing whether this is a relatively flat, hilly, or mixed terrain route. Mention any specific miles where terrain changes significantly (e.g., "mostly flat but expect hills around mile 4").</p>
 
-2. **Key Features** (as a bullet list):
-   - Notable elevation changes or challenging sections
-   - Any patterns in the terrain (gradual climbs, steep descents, rolling hills)
-   - Mention specific mile markers for important transitions
-   - Note any opportunities for recovery (flat or downhill sections after climbs)
+<h3>Key Features</h3>
+<ul>
+<li>Notable elevation changes or challenging sections</li>
+<li>Any patterns in the terrain (gradual climbs, steep descents, rolling hills)</li>
+<li>Mention specific mile markers for important transitions</li>
+<li>Note any opportunities for recovery (flat or downhill sections after climbs)</li>
+</ul>
 
-3. **Pacing & Effort Strategy**:
-   - Recommendations for how to manage effort throughout the course
-   - Specific advice for tackling climbs and utilizing descents
-   - Tips to help finish strong (energy conservation, when to push, when to hold back)
-   - Any mental preparation advice for challenging sections
+<h3>Pacing & Effort Strategy</h3>
+<p>Recommendations for how to manage effort throughout the course. Specific advice for tackling climbs and utilizing descents. Tips to help finish strong (energy conservation, when to push, when to hold back). Any mental preparation advice for challenging sections.</p>
 
-Keep your response focused, practical, and motivating. Format your response clearly with the three sections above.`;
+Keep your response focused, practical, and motivating. Return ONLY the HTML content without any markdown formatting or code blocks.`;
 
 export function buildFitnessCoachPrompt(routeData: {
   totalDistance: number;

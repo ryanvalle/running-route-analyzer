@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import DOMPurify from 'dompurify';
 import { RouteAnalysis, RoutePoint } from '@/types';
 import ElevationChart from './ElevationChart';
 import { METERS_TO_MILES } from '@/lib/constants';
@@ -79,11 +80,14 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
           </div>
           <div className="prose prose-sm dark:prose-invert max-w-none">
             <div 
-              className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
-              style={{ wordBreak: 'break-word' }}
-            >
-              {analysis.aiCoachingInsights}
-            </div>
+              className="text-gray-700 dark:text-gray-300 leading-relaxed"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(analysis.aiCoachingInsights, {
+                  ALLOWED_TAGS: ['h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br'],
+                  ALLOWED_ATTR: []
+                })
+              }}
+            />
           </div>
         </div>
       )}
