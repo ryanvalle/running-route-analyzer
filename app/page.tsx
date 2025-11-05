@@ -6,6 +6,7 @@ import StravaInput from '@/components/StravaInput';
 import FileUpload from '@/components/FileUpload';
 import RouteAnalysisDisplay from '@/components/RouteAnalysisDisplay';
 import { RoutePoint, RouteAnalysis } from '@/types';
+import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -126,13 +127,29 @@ function HomeContent() {
               
               {analysis.points && analysis.points.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Sample Points (first 5):</h3>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Sample Points (first 10) - RAW DATA:</h3>
                   <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify(analysis.points.slice(0, 5).map(p => ({
+                    {JSON.stringify(analysis.points.slice(0, 10).map((p, i) => ({
+                      index: i,
                       distance: `${p.distance.toFixed(2)}m`,
                       elevation: `${p.elevation.toFixed(2)}m`,
                       lat: p.lat.toFixed(6),
                       lng: p.lng.toFixed(6),
+                    })), null, 2)}
+                  </pre>
+                </div>
+              )}
+              
+              {analysis.points && analysis.points.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Chart Points (first 10) - USED FOR RENDERING:</h3>
+                  <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
+                    {JSON.stringify(analysis.points.slice(0, 10).map((p, i) => ({
+                      index: i,
+                      distance: `${(p.distance * METERS_TO_MILES).toFixed(4)} miles`,
+                      elevation: `${(p.elevation * FEET_PER_METER).toFixed(2)} ft`,
+                      rawDistance: `${p.distance.toFixed(2)}m`,
+                      rawElevation: `${p.elevation.toFixed(2)}m`,
                     })), null, 2)}
                   </pre>
                 </div>
