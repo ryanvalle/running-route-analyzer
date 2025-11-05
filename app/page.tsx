@@ -203,7 +203,7 @@ function HomeContent() {
               How it works
             </h3>
             <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-              <li>• Enter a Strava activity URL or upload a FIT file from your GPS device</li>
+              <li>• Enter a Strava activity URL or select from the five recent activities</li>
               <li>• The app will analyze the route elevation profile</li>
               <li>• Get a detailed breakdown of terrain changes mile by mile</li>
               <li>• See expected elevation gains and losses for each segment</li>
