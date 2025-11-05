@@ -78,7 +78,10 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
             </div>
           </div>
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+            <div 
+              className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
+              style={{ wordBreak: 'break-word' }}
+            >
               {analysis.aiCoachingInsights}
             </div>
           </div>

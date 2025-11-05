@@ -56,6 +56,12 @@ export async function getAICoachingInsights(
       max_tokens: 1000,
     });
     
+    // Validate response structure
+    if (!completion.choices || completion.choices.length === 0) {
+      console.error('OpenAI returned no completion choices');
+      return null;
+    }
+    
     const insights = completion.choices[0]?.message?.content;
     
     if (!insights) {
