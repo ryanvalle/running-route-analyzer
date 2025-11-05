@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cache, getCacheKey } from '@/lib/cache';
 import { analyzeRoute } from '@/lib/routeAnalysis';
+import { getAICoachingInsights } from '@/lib/openai';
 import { RoutePoint, RouteAnalysis } from '@/types';
 
 // Interface for cached activity data
@@ -62,6 +63,14 @@ export async function GET(
 
       const mockPoints = generateMockStravaData();
       const mockAnalysis = analyzeRoute(mockPoints);
+      
+      // Get AI coaching insights for demo data too (with caching)
+      const aiCoachingInsights = await getAICoachingInsights(mockAnalysis, activityId);
+      
+      // Add AI insights to the analysis if available
+      if (aiCoachingInsights) {
+        mockAnalysis.aiCoachingInsights = aiCoachingInsights;
+      }
 
       // Cache demo data as well
       const demoData = {
@@ -178,6 +187,14 @@ export async function GET(
 
     // Analyze the route
     const analysis = analyzeRoute(points);
+    
+    // Get AI coaching insights (with caching)
+    const aiCoachingInsights = await getAICoachingInsights(analysis, activityId);
+    
+    // Add AI insights to the analysis if available
+    if (aiCoachingInsights) {
+      analysis.aiCoachingInsights = aiCoachingInsights;
+    }
 
     // Cache the data
     const dataToCache = {

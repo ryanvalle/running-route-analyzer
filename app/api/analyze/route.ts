@@ -5,7 +5,7 @@ import { RoutePoint } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { points } = await request.json();
+    const { points, activityId } = await request.json();
 
     if (!points || !Array.isArray(points) || points.length === 0) {
       return NextResponse.json(
@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
     const analysis = analyzeRoute(points as RoutePoint[]);
 
     // Get AI coaching insights if OpenAI is configured
-    const aiCoachingInsights = await getAICoachingInsights(analysis);
+    // Pass activityId for caching if available
+    const aiCoachingInsights = await getAICoachingInsights(analysis, activityId);
 
     return NextResponse.json({
       success: true,

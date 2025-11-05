@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { FITNESS_COACH_SYSTEM_PROMPT, buildFitnessCoachPrompt } from './prompts/fitnessCoachPrompt';
 import { RouteAnalysis } from '@/types';
+import { cache, getCacheKey } from './cache';
 
 /**
  * Get OpenAI client instance
@@ -22,14 +23,29 @@ export function getOpenAIClient(): OpenAI | null {
 /**
  * Get AI coaching insights for a route analysis
  * Returns null if OpenAI is not configured or if there's an error
+ * 
+ * @param analysis - The route analysis data
+ * @param activityId - Optional Strava activity ID for caching (1 hour TTL)
  */
 export async function getAICoachingInsights(
-  analysis: RouteAnalysis
+  analysis: RouteAnalysis,
+  activityId?: string | number
 ): Promise<string | null> {
   const client = getOpenAIClient();
   
   if (!client) {
     return null;
+  }
+  
+  // Check cache if activityId is provided
+  if (activityId) {
+    const cacheKey = getCacheKey.aiCoachingInsights(activityId);
+    const cached = cache.get<string>(cacheKey);
+    
+    if (cached) {
+      console.log(`Using cached AI coaching insights for activity ${activityId}`);
+      return cached;
+    }
   }
   
   try {
@@ -67,6 +83,13 @@ export async function getAICoachingInsights(
     if (!insights) {
       console.error('No insights generated from OpenAI');
       return null;
+    }
+    
+    // Cache the insights if activityId is provided
+    if (activityId) {
+      const cacheKey = getCacheKey.aiCoachingInsights(activityId);
+      cache.set(cacheKey, insights);
+      console.log(`Cached AI coaching insights for activity ${activityId}`);
     }
     
     return insights;

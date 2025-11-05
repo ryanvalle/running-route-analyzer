@@ -61,4 +61,5 @@ export const getCacheKey = {
   stravaActivity: (activityId: string | number) => `strava:activity:${activityId}`,
   stravaUser: (userId: string | number) => `strava:user:${userId}`,
   analysis: (activityId: string | number) => `analysis:${activityId}`,
+  aiCoachingInsights: (activityId: string | number) => `ai:coaching:${activityId}`,
 };
