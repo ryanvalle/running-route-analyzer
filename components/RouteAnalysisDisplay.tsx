@@ -79,7 +79,7 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
             </div>
           </div>
           <div 
-            className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300"
+            className="ai-insights-content"
             dangerouslySetInnerHTML={{ 
               __html: DOMPurify.sanitize(analysis.aiCoachingInsights, {
                 ALLOWED_TAGS: ['h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br'],
