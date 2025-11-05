@@ -7,43 +7,24 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 async function resolveUrl(url: string): Promise<string> {
   try {
-    // Check if this is a Strava short link (using startsWith for more specific matching)
-    if (url.startsWith('https://strava.app.link/') || url.startsWith('http://strava.app.link/')) {
-      // Follow the redirect manually to get the final URL with timeout
+    // Check if this is a Strava short link (normalize to lowercase for case-insensitive comparison)
+    const normalizedUrl = url.toLowerCase();
+    if (normalizedUrl.startsWith('https://strava.app.link/') || normalizedUrl.startsWith('http://strava.app.link/')) {
+      // Follow the redirect to get the final URL with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       try {
         const response = await fetch(url, {
-          method: 'HEAD',
-          redirect: 'manual',
+          method: 'GET',
+          redirect: 'follow',
           signal: controller.signal,
         });
         
         clearTimeout(timeoutId);
         
-        // Check if we got a redirect
-        if (response.status >= 300 && response.status < 400) {
-          const location = response.headers.get('location');
-          if (location) {
-            return location;
-          }
-        }
-        
-        // If no redirect found with HEAD, try with GET request
-        const getController = new AbortController();
-        const getTimeoutId = setTimeout(() => getController.abort(), 5000);
-        
-        const getResponse = await fetch(url, {
-          method: 'GET',
-          redirect: 'follow',
-          signal: getController.signal,
-        });
-        
-        clearTimeout(getTimeoutId);
-        
         // Return the final URL after following redirects
-        return getResponse.url;
+        return response.url;
       } catch (fetchError) {
         clearTimeout(timeoutId);
         throw fetchError;
