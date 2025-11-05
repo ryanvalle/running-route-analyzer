@@ -1,5 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+/**
+ * Resolves a URL by following redirects to get the final destination URL
+ * @param url - The URL to resolve (can be a short link)
+ * @returns The final resolved URL after following redirects
+ */
+async function resolveUrl(url: string): Promise<string> {
+  try {
+    // Check if this is a Strava short link (normalize to lowercase for case-insensitive comparison)
+    const normalizedUrl = url.toLowerCase();
+    if (normalizedUrl.startsWith('https://strava.app.link/') || normalizedUrl.startsWith('http://strava.app.link/')) {
+      // Validate the URL format before making the request (SSRF protection)
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(url);
+      } catch {
+        // If URL parsing fails, return the original URL
+        return url;
+      }
+      
+      // Only allow strava.app.link domain to prevent SSRF attacks
+      if (parsedUrl.hostname.toLowerCase() !== 'strava.app.link') {
+        return url;
+      }
+      
+      // Follow the redirect to get the final URL with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      try {
+        console.log(url);
+        const response = await fetch(url, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+        
+        clearTimeout(timeoutId);
+        
+        // Get the resolved URL from the Location header
+        console.log(response);
+        const resolvedUrl = response.headers.get('location') || url;
+        console.log('Short link resolved to:', resolvedUrl);
+        
+        const resolvedParsedUrl = new URL(resolvedUrl);
+        const hostname = resolvedParsedUrl.hostname.toLowerCase();
+        
+        // Only allow exact strava.com or legitimate *.strava.com subdomains
+        // Use split to ensure we're checking the actual domain components
+        const parts = hostname.split('.');
+        const isValidStravaDomain = 
+          hostname === 'strava.com' || 
+          hostname === 'www.strava.com' ||
+          (parts.length >= 2 && parts[parts.length - 2] === 'strava' && parts[parts.length - 1] === 'com');
+        
+        if (isValidStravaDomain) {
+          return resolvedUrl;
+        }
+        
+        console.warn('Resolved URL is not a valid Strava domain:', hostname);
+        // If the resolved URL is not a Strava domain, return the original URL
+        return url;
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        console.error('Failed to resolve short link:', fetchError);
+        throw fetchError;
+      }
+    }
+    
+    // For regular URLs, return as-is
+    return url;
+  } catch (error) {
+    console.error('Error resolving URL:', error);
+    // If resolution fails, return the original URL
+    return url;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { activityUrl } = await request.json();
@@ -11,12 +87,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve the URL in case it's a short link
+    const resolvedUrl = await resolveUrl(activityUrl);
+    console.log('Processing URL:', activityUrl, '-> Resolved to:', resolvedUrl);
+
     // Extract activity ID from URL
     // This regex validates that the activity ID contains only digits, preventing injection attacks
-    const activityIdMatch = activityUrl.match(/activities\/(\d+)/);
+    const activityIdMatch = resolvedUrl.match(/activities\/(\d+)/);
     if (!activityIdMatch) {
+      console.error('Failed to extract activity ID from URL:', resolvedUrl);
       return NextResponse.json(
-        { error: 'Invalid Strava activity URL' },
+        { error: `Invalid Strava activity URL. Could not extract activity ID from short link: ${resolvedUrl}. Use web link instead` },
         { status: 400 }
       );
     }
