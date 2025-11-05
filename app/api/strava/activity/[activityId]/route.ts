@@ -64,10 +64,11 @@ export async function GET(
       const mockPoints = generateMockStravaData();
       const mockAnalysis = analyzeRoute(mockPoints);
       
+      // Add points to the analysis object for the map and elevation chart
+      mockAnalysis.points = mockPoints;
+      
       // Get AI coaching insights for demo data too (with caching)
       const aiCoachingInsights = await getAICoachingInsights(mockAnalysis, activityId);
-      
-      // Add AI insights to the analysis if available
       if (aiCoachingInsights) {
         mockAnalysis.aiCoachingInsights = aiCoachingInsights;
       }
@@ -188,10 +189,11 @@ export async function GET(
     // Analyze the route
     const analysis = analyzeRoute(points);
     
+    // Add points to the analysis object for the map and elevation chart
+    analysis.points = points;
+    
     // Get AI coaching insights (with caching)
     const aiCoachingInsights = await getAICoachingInsights(analysis, activityId);
-    
-    // Add AI insights to the analysis if available
     if (aiCoachingInsights) {
       analysis.aiCoachingInsights = aiCoachingInsights;
     }
