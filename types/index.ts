@@ -14,6 +14,7 @@ export interface RouteAnalysis {
   segments: RouteSegment[];
   summary: string;
   points?: RoutePoint[];
+  aiCoachingInsights?: string;
 }
 
 export interface LatLng {

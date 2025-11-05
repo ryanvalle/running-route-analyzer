@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRoute } from '@/lib/routeAnalysis';
+import { getAICoachingInsights } from '@/lib/openai';
 import { RoutePoint } from '@/types';
 
 export async function POST(request: NextRequest) {
@@ -35,11 +36,15 @@ export async function POST(request: NextRequest) {
 
     const analysis = analyzeRoute(points as RoutePoint[]);
 
+    // Get AI coaching insights if OpenAI is configured
+    const aiCoachingInsights = await getAICoachingInsights(analysis);
+
     return NextResponse.json({
       success: true,
       analysis: {
         ...analysis,
         points: points as RoutePoint[],
+        aiCoachingInsights: aiCoachingInsights || undefined,
       },
     });
   } catch (error) {
