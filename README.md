@@ -121,6 +121,16 @@ Without Strava API credentials configured:
 2. Click "Upload FIT File" or drag and drop the file
 3. The app will automatically parse and analyze the route
 
+### Emailing a Report
+
+Once you have analyzed a route:
+1. Click the **Email Report** button
+2. Enter your email address
+3. The app will capture high-resolution screenshots of the map and elevation chart
+4. You'll receive a beautifully formatted HTML email with all analysis details
+
+See [Email Setup Guide](docs/EMAIL_SETUP.md) for configuration instructions.
+
 ## How It Works
 
 The analyzer:
