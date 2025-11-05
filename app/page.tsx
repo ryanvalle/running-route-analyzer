@@ -202,16 +202,21 @@ function HomeContent() {
           </div>
         )}
 
-        {/* Shareable Link Section */}
+        {/* Analysis Results */}
+        {analysis && !analyzing && (
+          <RouteAnalysisDisplay analysis={analysis} />
+        )}
+
+        {/* Shareable Link Section - At Bottom */}
         {analysis && !analyzing && activityId && athleteId && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Analysis Complete!
+                  Share Your Analysis
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Your analysis is now available at a shareable URL with 1-hour caching
+                  Your analysis is available at a shareable URL with 1-hour caching
                 </p>
               </div>
               <a
@@ -222,11 +227,6 @@ function HomeContent() {
               </a>
             </div>
           </div>
-        )}
-
-        {/* Analysis Results */}
-        {analysis && !analyzing && (
-          <RouteAnalysisDisplay analysis={analysis} />
         )}
 
         {/* Info Section */}

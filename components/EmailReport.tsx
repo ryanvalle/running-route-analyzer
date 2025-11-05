@@ -24,6 +24,13 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
       logging: false,
       useCORS: true,
       allowTaint: true,
+      ignoreElements: (el) => {
+        // Skip elements that might have unsupported CSS color functions
+        const computedStyle = window.getComputedStyle(el);
+        const bgColor = computedStyle.backgroundColor;
+        // Skip elements with lab() or other modern color functions
+        return bgColor.includes('lab(') || bgColor.includes('lch(') || bgColor.includes('oklab(') || bgColor.includes('oklch(');
+      },
     });
     return canvas.toDataURL('image/png');
   };

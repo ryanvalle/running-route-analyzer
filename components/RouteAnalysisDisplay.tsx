@@ -53,15 +53,6 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
 
   return (
     <div className="w-full space-y-6">
-      {/* Email Report Button */}
-      <div className="flex justify-end">
-        <EmailReport 
-          analysis={analysis}
-          mapContainerRef={mapContainerRef}
-          chartContainerRef={chartContainerRef}
-        />
-      </div>
-
       {/* Summary */}
       <div className="p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
@@ -219,6 +210,15 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Email Report Button - At Bottom */}
+      <div className="flex justify-center">
+        <EmailReport 
+          analysis={analysis}
+          mapContainerRef={mapContainerRef}
+          chartContainerRef={chartContainerRef}
+        />
       </div>
     </div>
   );
