@@ -133,6 +133,36 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
         </p>
       </div>
 
+      {/* AI Coaching Insights */}
+      {analysis.aiCoachingInsights && (
+        <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-purple-200 dark:border-purple-700">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="flex-shrink-0 w-8 h-8 bg-purple-600 dark:bg-purple-500 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                AI Coaching Insights
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Personalized strategy and recommendations
+              </p>
+            </div>
+          </div>
+          <div 
+            className="ai-insights-content"
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(analysis.aiCoachingInsights, {
+                ALLOWED_TAGS: ['h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br'],
+                ALLOWED_ATTR: []
+              })
+            }}
+          />
+        </div>
+      )}
+
       {/* Settings Controls */}
       <div className="p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
@@ -212,36 +242,6 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
         </p>
       </div>
 
-      {/* AI Coaching Insights */}
-      {analysis.aiCoachingInsights && (
-        <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border-2 border-purple-200 dark:border-purple-700">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-purple-600 dark:bg-purple-500 rounded-full flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                AI Coaching Insights
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Personalized strategy and recommendations
-              </p>
-            </div>
-          </div>
-          <div 
-            className="ai-insights-content"
-            dangerouslySetInnerHTML={{ 
-              __html: DOMPurify.sanitize(analysis.aiCoachingInsights, {
-                ALLOWED_TAGS: ['h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'br'],
-                ALLOWED_ATTR: []
-              })
-            }}
-          />
-        </div>
-      )}
-
       {/* Overall Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -272,6 +272,7 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
             segments={analysis.segments}
             hoveredSegmentIndex={hoveredSegmentIndex}
             onHoverPoint={handleChartHover}
+            unit={unit}
           />
         </div>
       )}
@@ -290,6 +291,7 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
                 segments={analysis.segments}
                 hoveredSegmentIndex={hoveredSegmentIndex}
                 hoveredPoint={hoveredPoint}
+                unit={unit}
               />
             </div>
           </div>
