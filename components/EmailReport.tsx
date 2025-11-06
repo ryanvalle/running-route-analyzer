@@ -111,8 +111,8 @@ export default function EmailReport({ analysis, analysisDisplayRef }: EmailRepor
     // Create canvas to draw the SVG
     const canvas = document.createElement('canvas');
     const bbox = element.getBoundingClientRect();
-    canvas.width = bbox.width * 2; // 2x for high resolution
-    canvas.height = bbox.height * 2;
+    canvas.width = bbox.width * 1.6; // 2x for high resolution
+    canvas.height = bbox.height * 1.6;
     const ctx = canvas.getContext('2d');
     
     if (!ctx) {
