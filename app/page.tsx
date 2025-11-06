@@ -209,9 +209,9 @@ function HomeContent() {
           <RouteAnalysisDisplay ref={analysisDisplayRef} analysis={analysis} />
         )}
 
-        {/* Shareable Link Section - At Bottom */}
-        {analysis && !analyzing && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
+        {/* Shareable Link Section */}
+        {analysis && !analyzing && activityId && athleteId && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8 mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
