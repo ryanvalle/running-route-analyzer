@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRoute } from '@/lib/routeAnalysis';
 import { getAICoachingInsights } from '@/lib/openai';
 import { RoutePoint, DistanceUnit, SegmentIncrement } from '@/types';
+import { cache } from '@/lib/cache';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    const { points, activityId, unit, increment } = await request.json();
+    const { points, activityId, unit, increment, isGpxUpload } = await request.json();
 
     if (!points || !Array.isArray(points) || points.length === 0) {
       return NextResponse.json(
@@ -44,13 +46,26 @@ export async function POST(request: NextRequest) {
     // Pass activityId for caching if available
     const aiCoachingInsights = await getAICoachingInsights(analysis, activityId);
 
+    const fullAnalysis = {
+      ...analysis,
+      points: points as RoutePoint[],
+      aiCoachingInsights: aiCoachingInsights || undefined,
+    };
+
+    // If this is a GPX upload, generate a unique ID and cache the data
+    let gpxId: string | undefined;
+    if (isGpxUpload) {
+      gpxId = randomUUID();
+      cache.set(`gpx:${gpxId}`, {
+        points: points as RoutePoint[],
+        analysis: fullAnalysis,
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      analysis: {
-        ...analysis,
-        points: points as RoutePoint[],
-        aiCoachingInsights: aiCoachingInsights || undefined,
-      },
+      analysis: fullAnalysis,
+      gpxId,
     });
   } catch (error) {
     console.error('Error analyzing route:', error);

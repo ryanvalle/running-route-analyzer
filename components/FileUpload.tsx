@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { RoutePoint } from '@/types';
 
 interface FileUploadProps {
-  onUpload: (points: RoutePoint[]) => void;
+  onUpload: (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }, isGpxUpload?: boolean) => void;
 }
 
 export default function FileUpload({ onUpload }: FileUploadProps) {
@@ -33,7 +33,7 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
         throw new Error(data.error || 'Failed to upload file');
       }
 
-      onUpload(data.points);
+      onUpload(data.points, undefined, true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload file');
     } finally {

@@ -13,11 +13,12 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [activityId, setActivityId] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<string | null>(null);
+  const [gpxId, setGpxId] = useState<string | null>(null);
   const analysisDisplayRef = useRef<RouteAnalysisDisplayRef>(null);
   const [currentUnit, setCurrentUnit] = useState<DistanceUnit>('miles');
   const [currentIncrement, setCurrentIncrement] = useState<SegmentIncrement>(1);
 
-  const handleRouteData = async (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }) => {
+  const handleRouteData = async (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }, isGpxUpload?: boolean) => {
     setAnalyzing(true);
     setError(null);
 
@@ -50,6 +51,7 @@ function HomeContent() {
           activityId: activityInfo?.activityId,
           unit,
           increment,
+          isGpxUpload,
         }),
       });
 
@@ -63,10 +65,17 @@ function HomeContent() {
       setCurrentUnit(unit);
       setCurrentIncrement(increment);
       
-      // Store activity info for shareable link
-      if (activityInfo) {
+      // Clear previous IDs and set appropriate ones based on upload type
+      if (isGpxUpload) {
+        // For GPX uploads, clear Strava IDs and set GPX ID
+        setActivityId(null);
+        setAthleteId(null);
+        setGpxId(data.gpxId || null);
+      } else if (activityInfo) {
+        // For Strava activities, set Strava IDs and clear GPX ID
         setActivityId(activityInfo.activityId);
         setAthleteId(activityInfo.athleteId);
+        setGpxId(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze route');
@@ -139,7 +148,7 @@ function HomeContent() {
         )}
 
         {/* Shareable Link Section */}
-        {analysis && !analyzing && activityId && athleteId && (
+        {analysis && !analyzing && (activityId && athleteId || gpxId) && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8 mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -147,9 +156,7 @@ function HomeContent() {
                   Share Your Analysis
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {activityId && athleteId 
-                    ? 'Your analysis is available at a shareable URL with 1-hour caching (includes your display settings)'
-                    : 'Share your analysis via email or shareable link'}
+                  Your analysis is available at a shareable URL with 1-hour caching (includes your display settings)
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -160,6 +167,14 @@ function HomeContent() {
                 {activityId && athleteId && (
                   <a
                     href={`/analysis/${athleteId}/${activityId}?unit=${currentUnit}&increment=${currentIncrement}`}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
+                  >
+                    View Shareable Page →
+                  </a>
+                )}
+                {gpxId && (
+                  <a
+                    href={`/analysis-gpx/${gpxId}?unit=${currentUnit}&increment=${currentIncrement}`}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
                   >
                     View Shareable Page →
