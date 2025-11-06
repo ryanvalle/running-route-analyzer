@@ -17,6 +17,13 @@ export async function POST(request: NextRequest) {
       chartImage: string;
     } = body;
 
+    // Log image data for debugging
+    console.log('Email API received images:');
+    console.log('- Map image length:', mapImage?.length || 0);
+    console.log('- Chart image length:', chartImage?.length || 0);
+    console.log('- Map image starts with data:image/png:', mapImage?.startsWith('data:image/png'));
+    console.log('- Chart image starts with data:image/png:', chartImage?.startsWith('data:image/png'));
+
     // Validate email
     if (!email || !email.includes('@')) {
       return NextResponse.json(

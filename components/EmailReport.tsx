@@ -2,14 +2,14 @@
 
 import { useState } from 'react';
 import { RouteAnalysis } from '@/types';
+import { RouteAnalysisDisplayRef } from './RouteAnalysisDisplay';
 
 interface EmailReportProps {
   analysis: RouteAnalysis;
-  mapContainerRef?: React.RefObject<HTMLDivElement | null>;
-  chartContainerRef?: React.RefObject<HTMLDivElement | null>;
+  analysisDisplayRef?: React.RefObject<RouteAnalysisDisplayRef | null>;
 }
 
-export default function EmailReport({ analysis, mapContainerRef, chartContainerRef }: EmailReportProps) {
+export default function EmailReport({ analysis, analysisDisplayRef }: EmailReportProps) {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -187,31 +187,54 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
     setSuccess(false);
 
     try {
+      // Get the refs from the analysis display ref
+      const chartContainerRef = analysisDisplayRef?.current?.chartContainerRef;
+      const mapContainerRef = analysisDisplayRef?.current?.mapContainerRef;
+
+      console.log('Analysis display ref:', analysisDisplayRef?.current);
+      console.log('Chart container ref:', chartContainerRef);
+      console.log('Map container ref:', mapContainerRef);
+
       // Capture chart screenshot (SVG to PNG)
       let chartImage = '';
+      console.log('Chart container current:', chartContainerRef?.current);
       if (chartContainerRef?.current) {
         try {
           const chartElement = chartContainerRef.current;
+          console.log('Attempting to capture chart from element:', chartElement);
+          console.log('Chart element HTML:', chartElement.innerHTML.substring(0, 200));
           chartImage = await captureSVGAsImage(chartElement);
+          console.log('Chart image captured, length:', chartImage.length);
+          console.log('Chart image preview:', chartImage.substring(0, 50));
         } catch (chartError) {
-          console.warn('Failed to capture chart screenshot:', chartError);
+          console.error('Failed to capture chart screenshot:', chartError);
           // Continue without chart image
         }
+      } else {
+        console.warn('Chart container ref is not available');
       }
 
       // Capture map screenshot (Leaflet tiles to PNG)
       let mapImage = '';
+      console.log('Map container current:', mapContainerRef?.current);
       if (mapContainerRef?.current) {
         try {
           const mapElement = mapContainerRef.current;
+          console.log('Attempting to capture map from element:', mapElement);
+          console.log('Map element HTML:', mapElement.innerHTML.substring(0, 200));
           mapImage = await captureMapAsImage(mapElement);
+          console.log('Map image captured, length:', mapImage.length);
+          console.log('Map image preview:', mapImage.substring(0, 50));
         } catch (mapError) {
-          console.warn('Failed to capture map screenshot:', mapError);
+          console.error('Failed to capture map screenshot:', mapError);
           // Continue without map image
         }
+      } else {
+        console.warn('Map container ref is not available');
       }
 
       // Send email request
+      console.log('Sending email with images - Chart length:', chartImage.length, 'Map length:', mapImage.length);
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {

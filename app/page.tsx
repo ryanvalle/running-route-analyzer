@@ -226,8 +226,7 @@ function HomeContent() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <EmailReport 
                   analysis={analysis}
-                  mapContainerRef={analysisDisplayRef.current?.mapContainerRef || { current: null }}
-                  chartContainerRef={analysisDisplayRef.current?.chartContainerRef || { current: null }}
+                  analysisDisplayRef={analysisDisplayRef}
                 />
                 {activityId && athleteId && (
                   <a
