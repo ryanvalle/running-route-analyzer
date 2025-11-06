@@ -12,6 +12,14 @@ Welcome to the comprehensive documentation for the Running Route Analyzer applic
   - Setup instructions
   - Architecture overview
 
+### Visual Architecture
+- **[Sequence Diagrams](./sequence-diagrams/)** - Visual flow diagrams
+  - User experience flows (GPX upload, Strava activity, email report)
+  - Authentication flows (Strava OAuth)
+  - Data processing flows (route analysis, AI insights)
+  - API request flows
+  - Component interaction flows
+
 ### API Documentation
 - **[API Routes](./api-routes/)** - Server-side API endpoints
   - Core analysis routes
@@ -64,6 +72,19 @@ docs/
 ├── README.md                    # This file
 ├── overview.md                  # Application overview
 ├── types.md                     # TypeScript types
+├── sequence-diagrams/           # Visual flow diagrams (Mermaid)
+│   ├── README.md
+│   ├── gpx-upload-flow.md
+│   ├── strava-activity-flow.md
+│   ├── email-report-flow.md
+│   ├── strava-oauth-flow.md
+│   ├── route-analysis-flow.md
+│   ├── ai-insights-flow.md
+│   ├── api-request-overview.md
+│   ├── component-architecture.md
+│   ├── gpx-processing-flow.md
+│   ├── strava-data-flow.md
+│   └── map-chart-interaction.md
 ├── api-routes/                  # API endpoint documentation
 │   ├── README.md
 │   ├── analyze.md
