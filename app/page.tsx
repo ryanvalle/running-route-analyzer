@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import StravaInput from '@/components/StravaInput';
 import FileUpload from '@/components/FileUpload';
-import RouteAnalysisDisplay from '@/components/RouteAnalysisDisplay';
+import RouteAnalysisDisplay, { RouteAnalysisDisplayRef } from '@/components/RouteAnalysisDisplay';
+import EmailReport from '@/components/EmailReport';
 import { RoutePoint, RouteAnalysis } from '@/types';
 import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
@@ -16,6 +17,7 @@ function HomeContent() {
   const [error, setError] = useState<string | null>(null);
   const [activityId, setActivityId] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<string | null>(null);
+  const analysisDisplayRef = useRef<RouteAnalysisDisplayRef>(null);
 
   // Check for debug parameter
   useEffect(() => {
@@ -202,31 +204,41 @@ function HomeContent() {
           </div>
         )}
 
+        {/* Analysis Results */}
+        {analysis && !analyzing && (
+          <RouteAnalysisDisplay ref={analysisDisplayRef} analysis={analysis} />
+        )}
+
         {/* Shareable Link Section */}
         {analysis && !analyzing && activityId && athleteId && (
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8 mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Analysis Complete!
+                  Share Your Analysis
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Your analysis is now available at a shareable URL with 1-hour caching
+                  {activityId && athleteId 
+                    ? 'Your analysis is available at a shareable URL with 1-hour caching'
+                    : 'Share your analysis via email or shareable link'}
                 </p>
               </div>
-              <a
-                href={`/analysis/${athleteId}/${activityId}`}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap"
-              >
-                View Shareable Page →
-              </a>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <EmailReport 
+                  analysis={analysis}
+                  analysisDisplayRef={analysisDisplayRef}
+                />
+                {activityId && athleteId && (
+                  <a
+                    href={`/analysis/${athleteId}/${activityId}`}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
+                  >
+                    View Shareable Page →
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Analysis Results */}
-        {analysis && !analyzing && (
-          <RouteAnalysisDisplay analysis={analysis} />
         )}
 
         {/* Info Section */}

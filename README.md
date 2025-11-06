@@ -7,6 +7,7 @@ A Next.js application that analyzes routes from Strava activities or uploaded FI
 - 📊 **Route Analysis**: Get detailed mile-by-mile breakdowns of routes
 - 🏔️ **Elevation Profiles**: See elevation gain, loss, and grade for each segment
 - 🤖 **AI Coaching Insights**: Get personalized pacing strategies and recommendations from an AI fitness coach (powered by OpenAI)
+- 📧 **Email Reports**: Send yourself a fully formatted email with high-resolution map and chart images
 - 🔗 **Strava Integration**: Analyze routes directly from Strava activity URLs (demo mode included)
 - 📁 **FIT File Support**: Upload FIT files from your GPS device or watch
 - 🌓 **Dark Mode**: Fully responsive design with dark mode support
@@ -56,6 +57,12 @@ cp .env.example .env.local
 - Copy the API key to your `.env.local` file
 - Note: The app works without this, but AI coaching insights will not be available
 
+**Resend API** (for email reports):
+- Go to https://resend.com and sign up for a free account (100 emails/day)
+- Create a new API key
+- Copy the API key to your `.env.local` file
+- Note: Email report feature requires this configuration
+
 4. Run the development server:
 ```bash
 npm run dev
@@ -82,6 +89,7 @@ This app is optimized for deployment on Vercel:
    - `STRAVA_CLIENT_SECRET`
    - `STRAVA_REDIRECT_URI` (e.g., `https://your-domain.vercel.app/api/auth/strava/callback`)
    - `OPENAI_API_KEY` (for AI coaching insights)
+   - `RESEND_API_KEY` (for email reports - get free key at [resend.com](https://resend.com))
 5. Update your Strava API application's Authorization Callback Domain to match your Vercel domain
 6. Deploy!
 
@@ -112,6 +120,16 @@ Without Strava API credentials configured:
 1. Export a FIT file from your GPS watch or running app
 2. Click "Upload FIT File" or drag and drop the file
 3. The app will automatically parse and analyze the route
+
+### Emailing a Report
+
+Once you have analyzed a route:
+1. Click the **Email Report** button
+2. Enter your email address
+3. The app will capture high-resolution screenshots of the map and elevation chart
+4. You'll receive a beautifully formatted HTML email with all analysis details
+
+See [Email Setup Guide](docs/EMAIL_SETUP.md) for configuration instructions.
 
 ## How It Works
 

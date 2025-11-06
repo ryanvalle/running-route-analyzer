@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
 import dynamic from 'next/dynamic';
 import DOMPurify from 'dompurify';
 import { RouteAnalysis, RoutePoint } from '@/types';
@@ -21,9 +21,23 @@ interface RouteAnalysisDisplayProps {
   analysis: RouteAnalysis;
 }
 
-export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayProps) {
+export interface RouteAnalysisDisplayRef {
+  mapContainerRef: React.RefObject<HTMLDivElement | null>;
+  chartContainerRef: React.RefObject<HTMLDivElement | null>;
+}
+
+const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDisplayProps>(
+  function RouteAnalysisDisplay({ analysis }, ref) {
   const [manualHoveredSegmentIndex, setManualHoveredSegmentIndex] = useState<number | null>(null);
   const [hoveredPoint, setHoveredPoint] = useState<RoutePoint | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  // Expose refs to parent component
+  useImperativeHandle(ref, () => ({
+    mapContainerRef,
+    chartContainerRef,
+  }));
 
   // Calculate the segment index based on hovered point - memoized to avoid recalculation
   const hoveredSegmentFromPoint = useMemo(() => {
@@ -114,12 +128,14 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
 
       {/* Elevation Chart - Full Width */}
       {analysis.points && analysis.points.length > 0 && (
-        <ElevationChart 
-          points={analysis.points} 
-          segments={analysis.segments}
-          hoveredSegmentIndex={hoveredSegmentIndex}
-          onHoverPoint={handleChartHover}
-        />
+        <div ref={chartContainerRef}>
+          <ElevationChart 
+            points={analysis.points} 
+            segments={analysis.segments}
+            hoveredSegmentIndex={hoveredSegmentIndex}
+            onHoverPoint={handleChartHover}
+          />
+        </div>
       )}
 
       {/* Two Column Layout: Map and Mile-by-Mile */}
@@ -130,12 +146,14 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
             <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
               Route Map
             </h2>
-            <RouteMap
-              points={analysis.points}
-              segments={analysis.segments}
-              hoveredSegmentIndex={hoveredSegmentIndex}
-              hoveredPoint={hoveredPoint}
-            />
+            <div ref={mapContainerRef}>
+              <RouteMap
+                points={analysis.points}
+                segments={analysis.segments}
+                hoveredSegmentIndex={hoveredSegmentIndex}
+                hoveredPoint={hoveredPoint}
+              />
+            </div>
           </div>
         )}
 
@@ -206,4 +224,6 @@ export default function RouteAnalysisDisplay({ analysis }: RouteAnalysisDisplayP
       </div>
     </div>
   );
-}
+});
+
+export default RouteAnalysisDisplay;
