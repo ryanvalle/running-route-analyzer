@@ -22,7 +22,7 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/api/fit-upload', {
+      const response = await fetch('/api/gpx-upload', {
         method: 'POST',
         body: formData,
       });
@@ -72,13 +72,13 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
               </>
             )}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">FIT file</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">GPX file</p>
         </div>
         <input
           id="file-upload"
           type="file"
           className="hidden"
-          accept=".fit"
+          accept=".gpx"
           onChange={handleFileChange}
           disabled={uploading}
         />
