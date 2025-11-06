@@ -23,60 +23,68 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
       throw new Error('No SVG found in element');
     }
 
+    // Get dimensions
+    const bbox = svg.getBoundingClientRect();
+    const canvas = document.createElement('canvas');
+    canvas.width = bbox.width * 2; // 2x for high resolution
+    canvas.height = bbox.height * 2;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     // Clone the SVG to avoid modifying the original
     const clonedSvg = svg.cloneNode(true) as SVGElement;
     
-    // Get computed styles and apply them inline
-    const svgElements = clonedSvg.querySelectorAll('*');
-    svgElements.forEach((el) => {
-      const computedStyle = window.getComputedStyle(el as Element);
-      const inlineStyle = Array.from(computedStyle).reduce((acc, key) => {
-        return `${acc}${key}:${computedStyle.getPropertyValue(key)};`;
-      }, '');
-      (el as HTMLElement).setAttribute('style', inlineStyle);
-    });
-
-    // Set explicit dimensions
-    const bbox = svg.getBoundingClientRect();
-    clonedSvg.setAttribute('width', String(bbox.width * 2)); // 2x for high resolution
-    clonedSvg.setAttribute('height', String(bbox.height * 2));
-    clonedSvg.setAttribute('viewBox', `0 0 ${svg.getAttribute('viewBox')?.split(' ').slice(2).join(' ') || `${bbox.width} ${bbox.height}`}`);
+    // Set explicit dimensions on the cloned SVG
+    clonedSvg.setAttribute('width', String(bbox.width));
+    clonedSvg.setAttribute('height', String(bbox.height));
+    
+    // Preserve the original viewBox or create one
+    const viewBox = svg.getAttribute('viewBox');
+    if (viewBox) {
+      clonedSvg.setAttribute('viewBox', viewBox);
+    } else {
+      clonedSvg.setAttribute('viewBox', `0 0 ${bbox.width} ${bbox.height}`);
+    }
 
     // Serialize SVG to string
     const svgString = new XMLSerializer().serializeToString(clonedSvg);
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
 
-    // Convert SVG to PNG using canvas
+    // Convert SVG to PNG using canvas with timeout
     return new Promise((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(svgBlob);
+      
+      // Set a timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(url);
+        reject(new Error('SVG image load timeout'));
+      }, 5000); // 5 second timeout
 
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = bbox.width * 2;
-        canvas.height = bbox.height * 2;
-        const ctx = canvas.getContext('2d');
-        
-        if (!ctx) {
-          reject(new Error('Failed to get canvas context'));
-          return;
+        clearTimeout(timeout);
+        try {
+          // Draw the image scaled up
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          // Clean up
+          URL.revokeObjectURL(url);
+          // Convert to data URL
+          resolve(canvas.toDataURL('image/png'));
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
         }
-
-        // Fill with white background
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw the image
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Clean up
-        URL.revokeObjectURL(url);
-        
-        // Convert to data URL
-        resolve(canvas.toDataURL('image/png'));
       };
 
       img.onerror = () => {
+        clearTimeout(timeout);
         URL.revokeObjectURL(url);
         reject(new Error('Failed to load SVG image'));
       };
@@ -112,11 +120,15 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
 
     tileImages.forEach((img) => {
       if (img instanceof HTMLImageElement && img.complete) {
-        const rect = img.getBoundingClientRect();
-        const containerRect = mapContainer.getBoundingClientRect();
-        const x = (rect.left - containerRect.left) * 2;
-        const y = (rect.top - containerRect.top) * 2;
-        ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+        try {
+          const rect = img.getBoundingClientRect();
+          const containerRect = mapContainer.getBoundingClientRect();
+          const x = (rect.left - containerRect.left) * 2;
+          const y = (rect.top - containerRect.top) * 2;
+          ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+        } catch (err) {
+          console.warn('Failed to draw tile image:', err);
+        }
       }
     });
 
@@ -129,18 +141,31 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
       return new Promise((resolve) => {
         const img = new Image();
         const url = URL.createObjectURL(svgBlob);
+        
+        // Set a timeout to prevent hanging
+        const timeout = setTimeout(() => {
+          URL.revokeObjectURL(url);
+          // Return canvas with just tiles if SVG overlay times out
+          resolve(canvas.toDataURL('image/png'));
+        }, 3000); // 3 second timeout
 
         img.onload = () => {
-          const rect = svgOverlay.getBoundingClientRect();
-          const containerRect = mapContainer.getBoundingClientRect();
-          const x = (rect.left - containerRect.left) * 2;
-          const y = (rect.top - containerRect.top) * 2;
-          ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+          clearTimeout(timeout);
+          try {
+            const rect = svgOverlay.getBoundingClientRect();
+            const containerRect = mapContainer.getBoundingClientRect();
+            const x = (rect.left - containerRect.left) * 2;
+            const y = (rect.top - containerRect.top) * 2;
+            ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+          } catch (err) {
+            console.warn('Failed to draw SVG overlay:', err);
+          }
           URL.revokeObjectURL(url);
           resolve(canvas.toDataURL('image/png'));
         };
 
         img.onerror = () => {
+          clearTimeout(timeout);
           URL.revokeObjectURL(url);
           // Even if SVG overlay fails, return the canvas with tiles
           resolve(canvas.toDataURL('image/png'));
