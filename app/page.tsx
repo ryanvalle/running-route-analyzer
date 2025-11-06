@@ -6,7 +6,7 @@ import StravaInput from '@/components/StravaInput';
 import FileUpload from '@/components/FileUpload';
 import RouteAnalysisDisplay, { RouteAnalysisDisplayRef } from '@/components/RouteAnalysisDisplay';
 import EmailReport from '@/components/EmailReport';
-import { RoutePoint, RouteAnalysis } from '@/types';
+import { RoutePoint, RouteAnalysis, DistanceUnit, SegmentIncrement } from '@/types';
 import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
 function HomeContent() {
@@ -18,6 +18,8 @@ function HomeContent() {
   const [activityId, setActivityId] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<string | null>(null);
   const analysisDisplayRef = useRef<RouteAnalysisDisplayRef>(null);
+  const [currentUnit, setCurrentUnit] = useState<DistanceUnit>('miles');
+  const [currentIncrement, setCurrentIncrement] = useState<SegmentIncrement>(1);
 
   // Check for debug parameter
   useEffect(() => {
@@ -29,6 +31,24 @@ function HomeContent() {
     setError(null);
 
     try {
+      // Get saved settings from localStorage if available
+      let unit: DistanceUnit = 'miles';
+      let increment: SegmentIncrement = 1;
+      
+      if (typeof window !== 'undefined') {
+        const savedUnit = localStorage.getItem('routeAnalyzerUnit');
+        const savedIncrement = localStorage.getItem('routeAnalyzerIncrement');
+        if (savedUnit === 'miles' || savedUnit === 'kilometers') {
+          unit = savedUnit;
+        }
+        if (savedIncrement) {
+          const parsed = parseFloat(savedIncrement);
+          if (parsed === 0.25 || parsed === 0.5 || parsed === 1) {
+            increment = parsed as SegmentIncrement;
+          }
+        }
+      }
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
@@ -37,6 +57,8 @@ function HomeContent() {
         body: JSON.stringify({ 
           points,
           activityId: activityInfo?.activityId,
+          unit,
+          increment,
         }),
       });
 
@@ -47,6 +69,8 @@ function HomeContent() {
       }
 
       setAnalysis(data.analysis);
+      setCurrentUnit(unit);
+      setCurrentIncrement(increment);
       
       // Store activity info for shareable link
       if (activityInfo) {
@@ -219,7 +243,7 @@ function HomeContent() {
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {activityId && athleteId 
-                    ? 'Your analysis is available at a shareable URL with 1-hour caching'
+                    ? 'Your analysis is available at a shareable URL with 1-hour caching (includes your display settings)'
                     : 'Share your analysis via email or shareable link'}
                 </p>
               </div>
@@ -230,7 +254,7 @@ function HomeContent() {
                 />
                 {activityId && athleteId && (
                   <a
-                    href={`/analysis/${athleteId}/${activityId}`}
+                    href={`/analysis/${athleteId}/${activityId}?unit=${currentUnit}&increment=${currentIncrement}`}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
                   >
                     View Shareable Page →

@@ -46,6 +46,10 @@ export async function POST(request: NextRequest) {
     // Initialize Resend with API key
     const resend = new Resend(process.env.RESEND_API_KEY);
 
+    // Get unit label for email subject
+    const unit = analysis.unit || 'miles';
+    const unitLabel = unit === 'miles' ? 'mi' : 'km';
+
     // Generate HTML email content
     const htmlContent = generateEmailHTML(analysis, mapImage, chartImage);
 
@@ -53,7 +57,7 @@ export async function POST(request: NextRequest) {
     const { data, error: sendError } = await resend.emails.send({
       from: 'Route Analyzer <onboarding@resend.dev>', // Resend test domain
       to: [email],
-      subject: `Route Analysis - ${analysis.totalDistance.toFixed(2)} miles`,
+      subject: `Route Analysis - ${analysis.totalDistance.toFixed(2)} ${unitLabel}`,
       html: htmlContent,
     });
 
@@ -79,9 +83,15 @@ export async function POST(request: NextRequest) {
 }
 
 function generateEmailHTML(analysis: RouteAnalysis, mapImage: string, chartImage: string): string {
+  const unit = analysis.unit || 'miles';
+  const unitLabel = unit === 'miles' ? 'mi' : 'km';
+  const distanceLabel = unit === 'miles' ? 'Mile' : 'Km';
+  const increment = analysis.increment || 1;
+  const decimalPlaces = increment >= 1 ? 1 : 2;
+  
   const segmentsHTML = analysis.segments.map(segment => `
     <tr style="border-bottom: 1px solid #e5e7eb;">
-      <td style="padding: 12px; font-weight: 500;">Mile ${segment.startMile.toFixed(1)} - ${segment.endMile.toFixed(1)}</td>
+      <td style="padding: 12px; font-weight: 500;">${distanceLabel} ${segment.startMile.toFixed(decimalPlaces)} - ${segment.endMile.toFixed(decimalPlaces)}</td>
       <td style="padding: 12px;">${segment.description}</td>
       <td style="padding: 12px; text-align: center;">
         <span style="
@@ -160,7 +170,7 @@ function generateEmailHTML(analysis: RouteAnalysis, mapImage: string, chartImage
           <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; text-align: center;">
             <p style="font-size: 14px; color: #6b7280; margin: 0 0 4px 0;">Total Distance</p>
             <p style="font-size: 24px; font-weight: bold; color: #111827; margin: 0;">
-              ${analysis.totalDistance.toFixed(2)} mi
+              ${analysis.totalDistance.toFixed(2)} ${unitLabel}
             </p>
           </div>
           <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; text-align: center;">
@@ -200,12 +210,12 @@ function generateEmailHTML(analysis: RouteAnalysis, mapImage: string, chartImage
         <!-- Mile-by-Mile Breakdown -->
         <div style="margin-bottom: 24px;">
           <h2 style="font-size: 20px; font-weight: 600; color: #111827; margin: 0 0 12px 0;">
-            Mile-by-Mile Breakdown
+            ${unit === 'miles' ? 'Mile-by-Mile' : 'Kilometer-by-Kilometer'} Breakdown
           </h2>
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
             <thead>
               <tr style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Mile</th>
+                <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">${distanceLabel}</th>
                 <th style="padding: 12px; text-align: left; font-weight: 600; color: #374151;">Description</th>
                 <th style="padding: 12px; text-align: center; font-weight: 600; color: #374151;">Grade</th>
                 <th style="padding: 12px; text-align: right; font-weight: 600; color: #374151;">Gain</th>

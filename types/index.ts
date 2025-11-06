@@ -1,3 +1,6 @@
+export type DistanceUnit = 'miles' | 'kilometers';
+export type SegmentIncrement = 0.25 | 0.5 | 1;
+
 export interface RouteSegment {
   startMile: number;
   endMile: number;
@@ -15,6 +18,8 @@ export interface RouteAnalysis {
   summary: string;
   points?: RoutePoint[];
   aiCoachingInsights?: string;
+  unit?: DistanceUnit;
+  increment?: SegmentIncrement;
 }
 
 export interface LatLng {

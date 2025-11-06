@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import RouteAnalysisDisplay from '@/components/RouteAnalysisDisplay';
-import { RouteAnalysis, RoutePoint } from '@/types';
+import { RouteAnalysis, RoutePoint, DistanceUnit, SegmentIncrement } from '@/types';
+import { analyzeRoute } from '@/lib/routeAnalysis';
 
 interface PageProps {
   params: Promise<{
@@ -32,6 +33,10 @@ export default function AnalysisPage({ params }: PageProps) {
   const [stravaUser, setStravaUser] = useState<string>('');
   const [activityId, setActivityId] = useState<string>('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get unit and increment from URL params or localStorage
+  const [displayAnalysis, setDisplayAnalysis] = useState<RouteAnalysis | null>(null);
 
   useEffect(() => {
     params.then(({ stravaUser: user, activityId: id }) => {
@@ -75,6 +80,49 @@ export default function AnalysisPage({ params }: PageProps) {
         }
 
         setActivityData(data);
+        
+        // Get unit and increment from URL params or localStorage
+        let unit: DistanceUnit = 'miles';
+        let increment: SegmentIncrement = 1;
+        
+        const urlUnit = searchParams.get('unit');
+        const urlIncrement = searchParams.get('increment');
+        
+        if (urlUnit === 'miles' || urlUnit === 'kilometers') {
+          unit = urlUnit;
+        } else if (typeof window !== 'undefined') {
+          const savedUnit = localStorage.getItem('routeAnalyzerUnit');
+          if (savedUnit === 'miles' || savedUnit === 'kilometers') {
+            unit = savedUnit;
+          }
+        }
+        
+        if (urlIncrement) {
+          const parsed = parseFloat(urlIncrement);
+          if (parsed === 0.25 || parsed === 0.5 || parsed === 1) {
+            increment = parsed as SegmentIncrement;
+          }
+        } else if (typeof window !== 'undefined') {
+          const savedIncrement = localStorage.getItem('routeAnalyzerIncrement');
+          if (savedIncrement) {
+            const parsed = parseFloat(savedIncrement);
+            if (parsed === 0.25 || parsed === 0.5 || parsed === 1) {
+              increment = parsed as SegmentIncrement;
+            }
+          }
+        }
+        
+        // Recompute analysis with user's preferred settings if needed
+        if (data.analysis && data.points && (unit !== data.analysis.unit || increment !== data.analysis.increment)) {
+          const recomputed = analyzeRoute(data.points, unit, increment);
+          setDisplayAnalysis({
+            ...recomputed,
+            points: data.points,
+            aiCoachingInsights: data.analysis.aiCoachingInsights,
+          });
+        } else {
+          setDisplayAnalysis(data.analysis);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load activity');
       } finally {
@@ -83,7 +131,7 @@ export default function AnalysisPage({ params }: PageProps) {
     };
 
     fetchData();
-  }, [activityId, stravaUser, router]);
+  }, [activityId, stravaUser, router, searchParams]);
 
   const [copySuccess, setCopySuccess] = useState(false);
 
@@ -104,7 +152,7 @@ export default function AnalysisPage({ params }: PageProps) {
     );
   }
 
-  if (error || !activityData) {
+  if (error || !activityData || !displayAnalysis) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -174,7 +222,7 @@ export default function AnalysisPage({ params }: PageProps) {
 
         {/* Analysis Results */}
         <RouteAnalysisDisplay 
-          analysis={activityData.analysis} 
+          analysis={displayAnalysis} 
         />
       </div>
     </div>

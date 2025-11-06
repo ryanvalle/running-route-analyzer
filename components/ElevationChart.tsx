@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState, useRef, useEffect, MouseEvent } from 'react';
-import { RoutePoint } from '@/types';
-import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
+import { RoutePoint, DistanceUnit } from '@/types';
+import { METERS_TO_MILES, METERS_TO_KILOMETERS, FEET_PER_METER } from '@/lib/constants';
 
 // SVG dimensions for the elevation chart
 const CHART_WIDTH = 1000;
@@ -14,21 +14,26 @@ interface ElevationChartProps {
   segments?: Array<{ startMile: number; endMile: number }>;
   hoveredSegmentIndex?: number | null;
   onHoverPoint?: (point: RoutePoint | null) => void;
+  unit?: DistanceUnit;
 }
 
-export default function ElevationChart({ points, segments, hoveredSegmentIndex, onHoverPoint }: ElevationChartProps) {
+export default function ElevationChart({ points, segments, hoveredSegmentIndex, onHoverPoint, unit = 'miles' }: ElevationChartProps) {
   const [hoveredDistance, setHoveredDistance] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Get the conversion factor based on unit
+  const conversionFactor = unit === 'miles' ? METERS_TO_MILES : METERS_TO_KILOMETERS;
+  const unitLabel = unit === 'miles' ? 'mi' : 'km';
 
   // Process points for display
   const chartData = useMemo(() => {
     if (!points || points.length === 0) return [];
     
     return points.map(point => ({
-      distance: point.distance * METERS_TO_MILES,
+      distance: point.distance * conversionFactor,
       elevation: point.elevation * FEET_PER_METER,
     }));
-  }, [points]);
+  }, [points, conversionFactor]);
 
   const { minElevation, elevationRange, actualMin, actualMax } = useMemo(() => {
     if (chartData.length === 0) {
@@ -118,10 +123,10 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex, 
     
     // Find the point closest to the hovered distance
     let closestPoint = points[0];
-    let minDiff = Math.abs(points[0].distance * METERS_TO_MILES - hoveredDistance);
+    let minDiff = Math.abs(points[0].distance * conversionFactor - hoveredDistance);
     
     for (const point of points) {
-      const pointDistance = point.distance * METERS_TO_MILES;
+      const pointDistance = point.distance * conversionFactor;
       const diff = Math.abs(pointDistance - hoveredDistance);
       if (diff < minDiff) {
         minDiff = diff;
@@ -130,7 +135,7 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex, 
     }
     
     return closestPoint;
-  }, [hoveredDistance, points, chartData.length]);
+  }, [hoveredDistance, points, chartData.length, conversionFactor]);
 
   // Handle mouse move on chart
   const handleMouseMove = (e: MouseEvent<SVGSVGElement>) => {
@@ -294,20 +299,20 @@ export default function ElevationChart({ points, segments, hoveredSegmentIndex, 
               transform: 'translateX(-50%)',
             }}
             role="tooltip"
-            aria-label={`Elevation ${Math.round(hoverInfo.elevation)} feet at distance ${hoverInfo.distance.toFixed(2)} miles`}
+            aria-label={`Elevation ${Math.round(hoverInfo.elevation)} feet at distance ${hoverInfo.distance.toFixed(2)} ${unitLabel}`}
           >
-            <div className="font-semibold">{hoverInfo.distance.toFixed(2)} mi</div>
+            <div className="font-semibold">{hoverInfo.distance.toFixed(2)} {unitLabel}</div>
             <div>{Math.round(hoverInfo.elevation)} ft</div>
           </div>
         )}
         
         {/* X-axis labels */}
         <div className="flex justify-between mt-2 text-sm text-gray-600 dark:text-gray-400">
-          <span>0 mi</span>
-          <span>{(maxDistance / 4).toFixed(1)} mi</span>
-          <span>{(maxDistance / 2).toFixed(1)} mi</span>
-          <span>{(3 * maxDistance / 4).toFixed(1)} mi</span>
-          <span>{maxDistance.toFixed(1)} mi</span>
+          <span>0 {unitLabel}</span>
+          <span>{(maxDistance / 4).toFixed(1)} {unitLabel}</span>
+          <span>{(maxDistance / 2).toFixed(1)} {unitLabel}</span>
+          <span>{(3 * maxDistance / 4).toFixed(1)} {unitLabel}</span>
+          <span>{maxDistance.toFixed(1)} {unitLabel}</span>
         </div>
         
         {/* Y-axis info */}
