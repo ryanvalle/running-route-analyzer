@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { RouteAnalysis } from '@/types';
-import html2canvas from 'html2canvas';
 
 interface EmailReportProps {
   analysis: RouteAnalysis;
@@ -17,21 +16,140 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
-  const captureScreenshot = async (element: HTMLElement): Promise<string> => {
-    const canvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 2, // Higher resolution
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      ignoreElements: (el) => {
-        // Skip elements that might have unsupported CSS color functions
-        const computedStyle = window.getComputedStyle(el);
-        const bgColor = computedStyle.backgroundColor;
-        // Skip elements with lab() or other modern color functions
-        return bgColor.includes('lab(') || bgColor.includes('lch(') || bgColor.includes('oklab(') || bgColor.includes('oklch(');
-      },
+  const captureSVGAsImage = async (element: HTMLElement): Promise<string> => {
+    // Find SVG element
+    const svg = element.querySelector('svg');
+    if (!svg) {
+      throw new Error('No SVG found in element');
+    }
+
+    // Clone the SVG to avoid modifying the original
+    const clonedSvg = svg.cloneNode(true) as SVGElement;
+    
+    // Get computed styles and apply them inline
+    const svgElements = clonedSvg.querySelectorAll('*');
+    svgElements.forEach((el) => {
+      const computedStyle = window.getComputedStyle(el as Element);
+      const inlineStyle = Array.from(computedStyle).reduce((acc, key) => {
+        return `${acc}${key}:${computedStyle.getPropertyValue(key)};`;
+      }, '');
+      (el as HTMLElement).setAttribute('style', inlineStyle);
     });
+
+    // Set explicit dimensions
+    const bbox = svg.getBoundingClientRect();
+    clonedSvg.setAttribute('width', String(bbox.width * 2)); // 2x for high resolution
+    clonedSvg.setAttribute('height', String(bbox.height * 2));
+    clonedSvg.setAttribute('viewBox', `0 0 ${svg.getAttribute('viewBox')?.split(' ').slice(2).join(' ') || `${bbox.width} ${bbox.height}`}`);
+
+    // Serialize SVG to string
+    const svgString = new XMLSerializer().serializeToString(clonedSvg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+
+    // Convert SVG to PNG using canvas
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(svgBlob);
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = bbox.width * 2;
+        canvas.height = bbox.height * 2;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'));
+          return;
+        }
+
+        // Fill with white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw the image
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Clean up
+        URL.revokeObjectURL(url);
+        
+        // Convert to data URL
+        resolve(canvas.toDataURL('image/png'));
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load SVG image'));
+      };
+
+      img.src = url;
+    });
+  };
+
+  const captureMapAsImage = async (element: HTMLElement): Promise<string> => {
+    // For Leaflet maps, we need to capture the canvas tiles
+    const canvas = document.createElement('canvas');
+    const bbox = element.getBoundingClientRect();
+    canvas.width = bbox.width * 2; // 2x for high resolution
+    canvas.height = bbox.height * 2;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Failed to get canvas context');
+    }
+
+    // Fill with white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Find all map tiles (images) and the SVG overlay
+    const mapContainer = element.querySelector('.leaflet-container');
+    if (!mapContainer) {
+      throw new Error('Leaflet container not found');
+    }
+
+    // Get all tile images
+    const tileImages = mapContainer.querySelectorAll('.leaflet-tile-pane img');
+
+    tileImages.forEach((img) => {
+      if (img instanceof HTMLImageElement && img.complete) {
+        const rect = img.getBoundingClientRect();
+        const containerRect = mapContainer.getBoundingClientRect();
+        const x = (rect.left - containerRect.left) * 2;
+        const y = (rect.top - containerRect.top) * 2;
+        ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+      }
+    });
+
+    // Draw SVG overlays (polylines, markers, etc.)
+    const svgOverlay = mapContainer.querySelector('.leaflet-overlay-pane svg');
+    if (svgOverlay instanceof SVGElement) {
+      const svgString = new XMLSerializer().serializeToString(svgOverlay);
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      
+      return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = () => {
+          const rect = svgOverlay.getBoundingClientRect();
+          const containerRect = mapContainer.getBoundingClientRect();
+          const x = (rect.left - containerRect.left) * 2;
+          const y = (rect.top - containerRect.top) * 2;
+          ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          // Even if SVG overlay fails, return the canvas with tiles
+          resolve(canvas.toDataURL('image/png'));
+        };
+
+        img.src = url;
+      });
+    }
+
     return canvas.toDataURL('image/png');
   };
 
@@ -46,27 +164,27 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
     setSuccess(false);
 
     try {
-      // Capture map screenshot (optional - may fail with Leaflet)
-      let mapImage = '';
-      if (mapContainerRef?.current) {
-        try {
-          const mapElement = mapContainerRef.current;
-          mapImage = await captureScreenshot(mapElement);
-        } catch (mapError) {
-          console.warn('Failed to capture map screenshot:', mapError);
-          // Continue without map image
-        }
-      }
-
-      // Capture chart screenshot
+      // Capture chart screenshot (SVG to PNG)
       let chartImage = '';
       if (chartContainerRef?.current) {
         try {
           const chartElement = chartContainerRef.current;
-          chartImage = await captureScreenshot(chartElement);
+          chartImage = await captureSVGAsImage(chartElement);
         } catch (chartError) {
           console.warn('Failed to capture chart screenshot:', chartError);
           // Continue without chart image
+        }
+      }
+
+      // Capture map screenshot (Leaflet tiles to PNG)
+      let mapImage = '';
+      if (mapContainerRef?.current) {
+        try {
+          const mapElement = mapContainerRef.current;
+          mapImage = await captureMapAsImage(mapElement);
+        } catch (mapError) {
+          console.warn('Failed to capture map screenshot:', mapError);
+          // Continue without map image
         }
       }
 
