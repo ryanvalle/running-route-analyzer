@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
     // Fetch activities from Strava API
     // Get up to 30 most recent activities (we'll filter for runs and races on the client)
     const activitiesResponse = await fetch(
-      'https://www.strava.com/api/v3/athlete/activities?per_page=30',
+      'https://www.strava.com/api/v3/athlete/activities?per_page=150',
       {
         headers: {
           'Authorization': `Bearer ${currentAccessToken}`,

@@ -18,8 +18,7 @@ interface StravaActivity {
 }
 
 // Constants for quick select limits
-const MAX_RECENT_RUNS = 5;
-const MAX_RECENT_RACES = 3;
+const MAX_RECENT_RUNS = 20;
 
 export default function StravaInput({ onFetch }: StravaInputProps) {
   const [url, setUrl] = useState('');
@@ -152,7 +151,6 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
     .slice(0, MAX_RECENT_RUNS);
   const recentRaces = activities
     .filter((a) => a.workout_type === 1)
-    .slice(0, MAX_RECENT_RACES);
 
   return (
     <div className="w-full space-y-4">
