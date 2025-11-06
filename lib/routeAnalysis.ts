@@ -107,15 +107,15 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
     const avgGrade = distanceInMeters > 0 ? (netElevChange / (distanceInMeters * FEET_PER_METER)) * 100 : 0;
 
     let description = '';
-    if (Math.abs(avgGrade) < 1) {
+    if (avgGrade < 0.5 && avgGrade > -0.5) {
       description = 'Relatively flat';
-    } else if (avgGrade > 0) {
-      if (avgGrade < 3) description = 'Gentle climb';
-      else if (avgGrade < 6) description = 'Moderate climb';
+    } else if (avgGrade > 0.5) {
+      if (avgGrade < 1) description = 'Gentle climb';
+      else if (avgGrade < 3) description = 'Moderate climb';
       else description = 'Steep climb';
     } else {
-      if (avgGrade > -3) description = 'Gentle descent';
-      else if (avgGrade > -6) description = 'Moderate descent';
+      if (avgGrade > -1) description = 'Gentle descent';
+      else if (avgGrade > -3) description = 'Moderate descent';
       else description = 'Steep descent';
     }
 
