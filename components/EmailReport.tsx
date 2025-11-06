@@ -94,7 +94,21 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
   };
 
   const captureMapAsImage = async (element: HTMLElement): Promise<string> => {
-    // For Leaflet maps, we need to capture the canvas tiles
+    // Due to CORS restrictions with external map tiles, we can only reliably capture
+    // the SVG overlay (route line) without the background map tiles
+    const mapContainer = element.querySelector('.leaflet-container');
+    if (!mapContainer) {
+      throw new Error('Leaflet container not found');
+    }
+
+    // Get the SVG overlay (polylines, markers, etc.)
+    const svgOverlay = mapContainer.querySelector('.leaflet-overlay-pane svg');
+    if (!svgOverlay || !(svgOverlay instanceof SVGElement)) {
+      // If no SVG overlay, return empty string (email will be sent without map image)
+      return '';
+    }
+
+    // Create canvas to draw the SVG
     const canvas = document.createElement('canvas');
     const bbox = element.getBoundingClientRect();
     canvas.width = bbox.width * 2; // 2x for high resolution
@@ -105,77 +119,61 @@ export default function EmailReport({ analysis, mapContainerRef, chartContainerR
       throw new Error('Failed to get canvas context');
     }
 
-    // Fill with white background
-    ctx.fillStyle = '#ffffff';
+    // Fill with light gray background to simulate map
+    ctx.fillStyle = '#f0f0f0';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Find all map tiles (images) and the SVG overlay
-    const mapContainer = element.querySelector('.leaflet-container');
-    if (!mapContainer) {
-      throw new Error('Leaflet container not found');
-    }
+    // Serialize and draw the SVG overlay
+    const svgString = new XMLSerializer().serializeToString(svgOverlay);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(svgBlob);
+      
+      // Set a timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(url);
+        // Return canvas with just background if SVG overlay times out
+        resolve(canvas.toDataURL('image/png'));
+      }, 3000); // 3 second timeout
 
-    // Get all tile images
-    const tileImages = mapContainer.querySelectorAll('.leaflet-tile-pane img');
-
-    tileImages.forEach((img) => {
-      if (img instanceof HTMLImageElement && img.complete) {
+      img.onload = () => {
+        clearTimeout(timeout);
         try {
-          const rect = img.getBoundingClientRect();
+          const rect = svgOverlay.getBoundingClientRect();
           const containerRect = mapContainer.getBoundingClientRect();
           const x = (rect.left - containerRect.left) * 2;
           const y = (rect.top - containerRect.top) * 2;
           ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
         } catch (err) {
-          console.warn('Failed to draw tile image:', err);
+          console.warn('Failed to draw SVG overlay:', err);
         }
-      }
-    });
-
-    // Draw SVG overlays (polylines, markers, etc.)
-    const svgOverlay = mapContainer.querySelector('.leaflet-overlay-pane svg');
-    if (svgOverlay instanceof SVGElement) {
-      const svgString = new XMLSerializer().serializeToString(svgOverlay);
-      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      
-      return new Promise((resolve) => {
-        const img = new Image();
-        const url = URL.createObjectURL(svgBlob);
+        URL.revokeObjectURL(url);
         
-        // Set a timeout to prevent hanging
-        const timeout = setTimeout(() => {
-          URL.revokeObjectURL(url);
-          // Return canvas with just tiles if SVG overlay times out
+        try {
+          // This should work since we're only using local SVG content
           resolve(canvas.toDataURL('image/png'));
-        }, 3000); // 3 second timeout
+        } catch {
+          console.error('Failed to convert canvas to data URL');
+          // Return empty string if still fails
+          resolve('');
+        }
+      };
 
-        img.onload = () => {
-          clearTimeout(timeout);
-          try {
-            const rect = svgOverlay.getBoundingClientRect();
-            const containerRect = mapContainer.getBoundingClientRect();
-            const x = (rect.left - containerRect.left) * 2;
-            const y = (rect.top - containerRect.top) * 2;
-            ctx.drawImage(img, x, y, rect.width * 2, rect.height * 2);
-          } catch (err) {
-            console.warn('Failed to draw SVG overlay:', err);
-          }
-          URL.revokeObjectURL(url);
+      img.onerror = () => {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(url);
+        // Even if SVG overlay fails, return the canvas with background
+        try {
           resolve(canvas.toDataURL('image/png'));
-        };
+        } catch {
+          resolve('');
+        }
+      };
 
-        img.onerror = () => {
-          clearTimeout(timeout);
-          URL.revokeObjectURL(url);
-          // Even if SVG overlay fails, return the canvas with tiles
-          resolve(canvas.toDataURL('image/png'));
-        };
-
-        img.src = url;
-      });
-    }
-
-    return canvas.toDataURL('image/png');
+      img.src = url;
+    });
   };
 
   const handleSendEmail = async () => {
