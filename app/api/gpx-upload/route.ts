@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
           const point = segment.trkpt[i];
           
           // Extract lat, lon, and elevation
-          const lat = parseFloat(String(point.$.lat));
-          const lng = parseFloat(String(point.$.lon));
-          const elevation = point.ele ? parseFloat(String(point.ele)) : undefined;
+          const lat = parseNumber(point.$.lat);
+          const lng = parseNumber(point.$.lon);
+          const elevation = point.ele ? parseNumber(point.ele) : undefined;
 
           if (isNaN(lat) || isNaN(lng)) continue;
           if (elevation === undefined || isNaN(elevation)) continue;
@@ -113,6 +113,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to parse string or number values to float
+function parseNumber(value: string | number): number {
+  return parseFloat(String(value));
 }
 
 // Haversine formula to calculate distance between two GPS coordinates in meters
