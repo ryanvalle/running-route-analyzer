@@ -1,7 +1,11 @@
-import { RouteAnalysis, RoutePoint, RouteSegment } from '@/types';
-import { METERS_TO_MILES, FEET_PER_METER } from './constants';
+import { RouteAnalysis, RoutePoint, RouteSegment, DistanceUnit, SegmentIncrement } from '@/types';
+import { METERS_TO_MILES, METERS_TO_KILOMETERS, FEET_PER_METER } from './constants';
 
-export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
+export function analyzeRoute(
+  points: RoutePoint[], 
+  unit: DistanceUnit = 'miles',
+  increment: SegmentIncrement = 1
+): RouteAnalysis {
   if (!points || points.length === 0) {
     return {
       totalDistance: 0,
@@ -9,10 +13,13 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
       totalElevationLoss: 0,
       segments: [],
       summary: 'No route data available',
+      unit,
+      increment,
     };
   }
 
-  const totalDistance = points[points.length - 1].distance * METERS_TO_MILES;
+  const conversionFactor = unit === 'miles' ? METERS_TO_MILES : METERS_TO_KILOMETERS;
+  const totalDistance = points[points.length - 1].distance * conversionFactor;
   let totalElevationGain = 0;
   let totalElevationLoss = 0;
 
@@ -29,19 +36,19 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
   totalElevationGain *= FEET_PER_METER;
   totalElevationLoss *= FEET_PER_METER;
 
-  // Create mile-based segments
+  // Create segments based on selected unit and increment
   const segments: RouteSegment[] = [];
-  const milesPerSegment = 1;
-  const numSegments = Math.ceil(totalDistance / milesPerSegment);
+  const segmentSize = increment;
+  const numSegments = Math.ceil(totalDistance / segmentSize);
   
   // Maintain a running index to avoid rescanning points (O(n) instead of O(n*m))
   let currentPointIndex = 0;
 
   for (let i = 0; i < numSegments; i++) {
-    const startMile = i * milesPerSegment;
-    const endMile = Math.min((i + 1) * milesPerSegment, totalDistance);
+    const startMile = i * segmentSize;
+    const endMile = Math.min((i + 1) * segmentSize, totalDistance);
     
-    // Find all points in this mile segment, including one point beyond the end
+    // Find all points in this segment, including one point beyond the end
     // to properly capture elevation changes at segment boundaries
     const segmentPoints: RoutePoint[] = [];
     let firstPointBeyondEnd: RoutePoint | null = null;
@@ -51,8 +58,8 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
     
     // Skip points before this segment starts
     while (j < points.length) {
-      const mile = points[j].distance * METERS_TO_MILES;
-      if (mile >= startMile || (i > 0 && mile > startMile)) {
+      const distance = points[j].distance * conversionFactor;
+      if (distance >= startMile || (i > 0 && distance > startMile)) {
         break;
       }
       j++;
@@ -63,19 +70,19 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
     
     // Collect points for this segment
     while (j < points.length) {
-      const mile = points[j].distance * METERS_TO_MILES;
+      const distance = points[j].distance * conversionFactor;
       
       // For the first segment, include points >= startMile
       // For subsequent segments, include points > startMile to avoid double-counting
-      const includeStart = (i === 0 && mile >= startMile) || (i > 0 && mile > startMile);
+      const includeStart = (i === 0 && distance >= startMile) || (i > 0 && distance > startMile);
       
       // Include all points within the segment
-      if (includeStart && mile <= endMile) {
+      if (includeStart && distance <= endMile) {
         segmentPoints.push(points[j]);
         j++;
       }
       // Capture the first point beyond the segment end to include elevation changes at the boundary
-      else if (mile > endMile) {
+      else if (distance > endMile) {
         firstPointBeyondEnd = points[j];
         break;
       } else {
@@ -130,7 +137,7 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
   }
 
   // Generate summary
-  const summary = generateSummary(segments, totalDistance);
+  const summary = generateSummary(segments, totalDistance, unit);
 
   return {
     totalDistance,
@@ -138,10 +145,15 @@ export function analyzeRoute(points: RoutePoint[]): RouteAnalysis {
     totalElevationLoss,
     segments,
     summary,
+    unit,
+    increment,
   };
 }
 
-function generateSummary(segments: RouteSegment[], totalDistance: number): string {
+function generateSummary(segments: RouteSegment[], totalDistance: number, unit: DistanceUnit): string {
+  const unitLabel = unit === 'miles' ? 'mile' : 'kilometer';
+  const unitLabelPlural = unit === 'miles' ? 'miles' : 'kilometers';
+  
   const summaryParts: string[] = [];
   
   let currentTerrainStart = 0;
@@ -157,8 +169,9 @@ function generateSummary(segments: RouteSegment[], totalDistance: number): strin
     if (segment.description !== currentTerrain) {
       if (currentTerrainStart === 0) {
         if (isFlatOrGentle && i <= 3) {
+          const distance = Math.round(segment.startMile);
           summaryParts.push(
-            `The first ${Math.round(segment.startMile)} mile${Math.round(segment.startMile) !== 1 ? 's' : ''} will be ${currentTerrain.toLowerCase()}`
+            `The first ${distance} ${distance !== 1 ? unitLabelPlural : unitLabel} will be ${currentTerrain.toLowerCase()}`
           );
         }
       }
@@ -170,13 +183,13 @@ function generateSummary(segments: RouteSegment[], totalDistance: number): strin
     // Look for significant elevation changes
     if (segment.description.includes('climb') && !segments[i-1]?.description.includes('climb')) {
       summaryParts.push(
-        `Expect elevation gain starting at mile ${Math.round(segment.startMile)}`
+        `Expect elevation gain starting at ${unitLabel} ${Math.round(segment.startMile)}`
       );
     }
   }
 
   if (summaryParts.length === 0) {
-    return `This ${totalDistance.toFixed(1)}-mile route has varied terrain.`;
+    return `This ${totalDistance.toFixed(1)}-${unitLabel} route has varied terrain.`;
   }
 
   return summaryParts.join('. ') + '.';

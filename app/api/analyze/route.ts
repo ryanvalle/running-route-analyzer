@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyzeRoute } from '@/lib/routeAnalysis';
 import { getAICoachingInsights } from '@/lib/openai';
-import { RoutePoint } from '@/types';
+import { RoutePoint, DistanceUnit, SegmentIncrement } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { points, activityId } = await request.json();
+    const { points, activityId, unit, increment } = await request.json();
 
     if (!points || !Array.isArray(points) || points.length === 0) {
       return NextResponse.json(
@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analysis = analyzeRoute(points as RoutePoint[]);
+    // Use provided unit and increment or defaults
+    const selectedUnit: DistanceUnit = (unit === 'kilometers' || unit === 'miles') ? unit : 'miles';
+    const selectedIncrement: SegmentIncrement = (increment === 0.25 || increment === 0.5 || increment === 1) ? increment : 1;
+
+    const analysis = analyzeRoute(points as RoutePoint[], selectedUnit, selectedIncrement);
 
     // Get AI coaching insights if OpenAI is configured
     // Pass activityId for caching if available
