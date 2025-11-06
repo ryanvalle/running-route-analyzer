@@ -14,12 +14,12 @@ declare module 'gpx-parser-builder' {
     src?: string;
     sym?: string;
     type?: string;
-    extensions?: any;
+    extensions?: Record<string, unknown>;
   }
 
   export interface TrackSegment {
     trkpt?: Waypoint[];
-    extensions?: any;
+    extensions?: Record<string, unknown>;
   }
 
   export interface Track {
@@ -29,7 +29,7 @@ declare module 'gpx-parser-builder' {
     src?: string;
     number?: number;
     type?: string;
-    extensions?: any;
+    extensions?: Record<string, unknown>;
     trkseg?: TrackSegment[];
   }
 
@@ -40,28 +40,28 @@ declare module 'gpx-parser-builder' {
     src?: string;
     number?: number;
     type?: string;
-    extensions?: any;
+    extensions?: Record<string, unknown>;
   }
 
   export interface Metadata {
     name?: string;
     desc?: string;
-    author?: any;
+    author?: Record<string, unknown>;
     time?: Date;
   }
 
   export default class GPX {
-    $?: any;
+    $?: Record<string, unknown>;
     metadata?: Metadata;
     wpt?: Waypoint[];
     rte?: Route[];
     trk?: Track[];
-    extensions?: any;
+    extensions?: Record<string, unknown>;
 
-    constructor(object: any);
+    constructor(object: Record<string, unknown>);
     
     static parse(gpxString: string): GPX | undefined;
     
-    toString(options?: any): string;
+    toString(options?: Record<string, unknown>): string;
   }
 }
