@@ -39,7 +39,9 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
   const [unit, setUnit] = useState<DistanceUnit>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('routeAnalyzerUnit');
-      return (saved as DistanceUnit) || initialAnalysis.unit || 'miles';
+      if (saved === 'miles' || saved === 'kilometers') {
+        return saved;
+      }
     }
     return initialAnalysis.unit || 'miles';
   });
@@ -47,7 +49,12 @@ const RouteAnalysisDisplay = forwardRef<RouteAnalysisDisplayRef, RouteAnalysisDi
   const [increment, setIncrement] = useState<SegmentIncrement>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('routeAnalyzerIncrement');
-      return (saved ? parseFloat(saved) as SegmentIncrement : null) || initialAnalysis.increment || 1;
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (parsed === 0.25 || parsed === 0.5 || parsed === 1) {
+          return parsed;
+        }
+      }
     }
     return initialAnalysis.increment || 1;
   });
