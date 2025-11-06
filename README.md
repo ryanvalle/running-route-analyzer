@@ -1,6 +1,6 @@
 # Route Analyzer
 
-A Next.js application that analyzes routes from Strava activities or uploaded FIT files, providing detailed elevation profiles and terrain summaries.
+A Next.js application that analyzes routes from Strava activities or uploaded GPX files, providing detailed elevation profiles and terrain summaries.
 
 ## Features
 
@@ -9,7 +9,7 @@ A Next.js application that analyzes routes from Strava activities or uploaded FI
 - 🤖 **AI Coaching Insights**: Get personalized pacing strategies and recommendations from an AI fitness coach (powered by OpenAI)
 - 📧 **Email Reports**: Send yourself a fully formatted email with high-resolution map and chart images
 - 🔗 **Strava Integration**: Analyze routes directly from Strava activity URLs (demo mode included)
-- 📁 **FIT File Support**: Upload FIT files from your GPS device or watch
+- 📁 **GPX File Support**: Upload GPX files from your GPS device or watch
 - 🌓 **Dark Mode**: Fully responsive design with dark mode support
 - ⚡ **Fast**: Built with Next.js 16 for optimal performance
 
@@ -115,10 +115,10 @@ Without Strava API credentials configured:
 3. Click "Analyze"
 4. The app will generate mock data for demonstration purposes
 
-### Uploading a FIT File
+### Uploading a GPX File
 
-1. Export a FIT file from your GPS watch or running app
-2. Click "Upload FIT File" or drag and drop the file
+1. Export a GPX file from your GPS watch or running app
+2. Click "Upload GPX File" or drag and drop the file
 3. The app will automatically parse and analyze the route
 
 ### Emailing a Report
@@ -152,7 +152,7 @@ Example output:
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
-- **FIT File Parsing**: fit-file-parser
+- **GPX File Parsing**: gpx-parser-builder
 - **Strava Integration**: Strava API v3 with OAuth 2.0
 
 ## Project Structure
@@ -164,12 +164,12 @@ running-route-analyzer/
 │   │   ├── analyze/           # Route analysis endpoint
 │   │   ├── auth/
 │   │   │   └── strava/        # Strava OAuth endpoints
-│   │   ├── fit-upload/        # FIT file upload handler
+│   │   ├── gpx-upload/        # GPX file upload handler
 │   │   └── strava/            # Strava API integration
 │   ├── layout.tsx
 │   └── page.tsx               # Main application page
 ├── components/
-│   ├── FileUpload.tsx           # FIT file upload component
+│   ├── FileUpload.tsx           # GPX file upload component
 │   ├── StravaInput.tsx          # Strava URL input component
 │   └── RouteAnalysisDisplay.tsx # Analysis results display
 ├── lib/
@@ -212,8 +212,8 @@ Analyzes route points and returns elevation profile.
 }
 ```
 
-### POST `/api/fit-upload`
-Uploads and parses a FIT file.
+### POST `/api/gpx-upload`
+Uploads and parses a GPX file.
 
 **Request:** FormData with `file` field
 

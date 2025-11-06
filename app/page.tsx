@@ -1,32 +1,24 @@
 'use client';
 
-import { useState, useEffect, Suspense, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, Suspense, useRef } from 'react';
 import StravaInput from '@/components/StravaInput';
 import FileUpload from '@/components/FileUpload';
 import RouteAnalysisDisplay, { RouteAnalysisDisplayRef } from '@/components/RouteAnalysisDisplay';
 import EmailReport from '@/components/EmailReport';
 import { RoutePoint, RouteAnalysis, DistanceUnit, SegmentIncrement } from '@/types';
-import { METERS_TO_MILES, FEET_PER_METER } from '@/lib/constants';
 
 function HomeContent() {
-  const searchParams = useSearchParams();
-  const [debugMode, setDebugMode] = useState(false);
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activityId, setActivityId] = useState<string | null>(null);
   const [athleteId, setAthleteId] = useState<string | null>(null);
+  const [gpxId, setGpxId] = useState<string | null>(null);
   const analysisDisplayRef = useRef<RouteAnalysisDisplayRef>(null);
   const [currentUnit, setCurrentUnit] = useState<DistanceUnit>('miles');
   const [currentIncrement, setCurrentIncrement] = useState<SegmentIncrement>(1);
 
-  // Check for debug parameter
-  useEffect(() => {
-    setDebugMode(searchParams.get('debug') === 'true');
-  }, [searchParams]);
-
-  const handleRouteData = async (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }) => {
+  const handleRouteData = async (points: RoutePoint[], activityInfo?: { activityId: string; athleteId: string }, isGpxUpload?: boolean) => {
     setAnalyzing(true);
     setError(null);
 
@@ -59,6 +51,7 @@ function HomeContent() {
           activityId: activityInfo?.activityId,
           unit,
           increment,
+          isGpxUpload,
         }),
       });
 
@@ -72,10 +65,17 @@ function HomeContent() {
       setCurrentUnit(unit);
       setCurrentIncrement(increment);
       
-      // Store activity info for shareable link
-      if (activityInfo) {
+      // Clear previous IDs and set appropriate ones based on upload type
+      if (isGpxUpload) {
+        // For GPX uploads, clear Strava IDs and set GPX ID
+        setActivityId(null);
+        setAthleteId(null);
+        setGpxId(data.gpxId || null);
+      } else if (activityInfo) {
+        // For Strava activities, set Strava IDs and clear GPX ID
         setActivityId(activityInfo.activityId);
         setAthleteId(activityInfo.athleteId);
+        setGpxId(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze route');
@@ -93,7 +93,7 @@ function HomeContent() {
             Route Analyzer
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">
-            Analyze your routes from Strava or FIT files
+            Analyze your routes from Strava or GPX files
           </p>
         </div>
 
@@ -107,27 +107,23 @@ function HomeContent() {
               <StravaInput onFetch={handleRouteData} />
             </div>
 
-            {debugMode && (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">
-                      OR
-                    </span>
-                  </div>
-                </div>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">
+                  OR
+                </span>
+              </div>
+            </div>
 
-                <div>
-                  <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
-                    Upload FIT File
-                  </h2>
-                  <FileUpload onUpload={handleRouteData} />
-                </div>
-              </>
-            )}
+            <div>
+              <h2 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+                Upload GPX File
+              </h2>
+              <FileUpload onUpload={handleRouteData} />
+            </div>
           </div>
         </div>
 
@@ -146,95 +142,13 @@ function HomeContent() {
           </div>
         )}
 
-        {/* Debug Information */}
-        {debugMode && analysis && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              🐛 Debug Information
-            </h2>
-            <div className="space-y-4 text-sm font-mono">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Analysis Object:</h3>
-                <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                  {JSON.stringify({
-                    totalDistance: analysis.totalDistance,
-                    totalElevationGain: analysis.totalElevationGain,
-                    totalElevationLoss: analysis.totalElevationLoss,
-                    segmentCount: analysis.segments?.length || 0,
-                    pointCount: analysis.points?.length || 0,
-                  }, null, 2)}
-                </pre>
-              </div>
-              
-              {analysis.points && analysis.points.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Sample Points (first 10) - RAW DATA:</h3>
-                  <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify(analysis.points.slice(0, 10).map((p, i) => ({
-                      index: i,
-                      distance: `${p.distance.toFixed(2)}m`,
-                      elevation: `${p.elevation.toFixed(2)}m`,
-                      lat: p.lat.toFixed(6),
-                      lng: p.lng.toFixed(6),
-                    })), null, 2)}
-                  </pre>
-                </div>
-              )}
-              
-              {analysis.points && analysis.points.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Chart Points (first 10) - USED FOR RENDERING:</h3>
-                  <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify(analysis.points.slice(0, 10).map((p, i) => ({
-                      index: i,
-                      distance: `${(p.distance * METERS_TO_MILES).toFixed(4)} miles`,
-                      elevation: `${(p.elevation * FEET_PER_METER).toFixed(2)} ft`,
-                      rawDistance: `${p.distance.toFixed(2)}m`,
-                      rawElevation: `${p.elevation.toFixed(2)}m`,
-                    })), null, 2)}
-                  </pre>
-                </div>
-              )}
-              
-              {analysis.points && analysis.points.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Elevation Statistics:</h3>
-                  <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify({
-                      minElevation: `${Math.min(...analysis.points.map(p => p.elevation)).toFixed(2)}m`,
-                      maxElevation: `${Math.max(...analysis.points.map(p => p.elevation)).toFixed(2)}m`,
-                      elevationRange: `${(Math.max(...analysis.points.map(p => p.elevation)) - Math.min(...analysis.points.map(p => p.elevation))).toFixed(2)}m`,
-                      totalPoints: analysis.points.length,
-                    }, null, 2)}
-                  </pre>
-                </div>
-              )}
-              
-              {analysis.segments && analysis.segments.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Segments (first 3):</h3>
-                  <pre className="bg-white dark:bg-gray-900 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify(analysis.segments.slice(0, 3).map(s => ({
-                      miles: `${s.startMile.toFixed(1)}-${s.endMile.toFixed(1)}`,
-                      gain: `${s.elevationGain.toFixed(1)}ft`,
-                      loss: `${s.elevationLoss.toFixed(1)}ft`,
-                      grade: `${s.avgGrade.toFixed(1)}%`,
-                      description: s.description,
-                    })), null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Analysis Results */}
         {analysis && !analyzing && (
           <RouteAnalysisDisplay ref={analysisDisplayRef} analysis={analysis} />
         )}
 
         {/* Shareable Link Section */}
-        {analysis && !analyzing && activityId && athleteId && (
+        {analysis && !analyzing && (activityId && athleteId || gpxId) && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8 mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -242,9 +156,7 @@ function HomeContent() {
                   Share Your Analysis
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {activityId && athleteId 
-                    ? 'Your analysis is available at a shareable URL with 1-hour caching (includes your display settings)'
-                    : 'Share your analysis via email or shareable link'}
+                  Your analysis is available at a shareable URL with 1-hour caching (includes your display settings)
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3">
@@ -255,6 +167,14 @@ function HomeContent() {
                 {activityId && athleteId && (
                   <a
                     href={`/analysis/${athleteId}/${activityId}?unit=${currentUnit}&increment=${currentIncrement}`}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
+                  >
+                    View Shareable Page →
+                  </a>
+                )}
+                {gpxId && (
+                  <a
+                    href={`/analysis-gpx/${gpxId}?unit=${currentUnit}&increment=${currentIncrement}`}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-center"
                   >
                     View Shareable Page →
