@@ -181,6 +181,36 @@ running-route-analyzer/
 
 ## API Endpoints
 
+### GET `/api/health`
+Returns application health status and configuration details.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-16T07:09:47.392Z",
+  "version": "0.1.0",
+  "uptime": {
+    "seconds": 15,
+    "human": "15s"
+  },
+  "services": {
+    "openai": {
+      "configured": false,
+      "status": "not configured"
+    },
+    "strava": {
+      "configured": false,
+      "status": "not configured"
+    },
+    "resend": {
+      "configured": false,
+      "status": "not configured"
+    }
+  }
+}
+```
+
 ### POST `/api/analyze`
 Analyzes route points and returns elevation profile.
 
