@@ -154,20 +154,26 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
 
   return (
     <div className="w-full space-y-4">
+      {/* Demo mode notice */}
+      {!configured && (
+        <p className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+          Demo mode: Enter any Strava activity URL to analyze with sample data.
+        </p>
+      )}
       {/* URL Input Form */}
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter Strava activity URL or short link (e.g., https://strava.app.link/...)"
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white min-w-0"
           disabled={loading}
         />
         <button
           type="submit"
           disabled={loading || !url}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap sm:w-auto w-full"
         >
           {loading ? 'Loading...' : 'Analyze'}
         </button>
@@ -229,7 +235,7 @@ export default function StravaInput({ onFetch }: StravaInputProps) {
       )}
 
       {error && (
-        <p className="text-sm text-yellow-600 dark:text-yellow-400">{error}</p>
+        <p className={`text-sm ${error.includes('demo') || error.includes('Demo') ? 'text-blue-600 dark:text-blue-400' : 'text-yellow-600 dark:text-yellow-400'}`}>{error}</p>
       )}
     </div>
   );
