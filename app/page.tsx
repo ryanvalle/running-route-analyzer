@@ -5,6 +5,7 @@ import StravaInput from '@/components/StravaInput';
 import FileUpload from '@/components/FileUpload';
 import RouteAnalysisDisplay, { RouteAnalysisDisplayRef } from '@/components/RouteAnalysisDisplay';
 import EmailReport from '@/components/EmailReport';
+import TrainingContributionGraph from '@/components/TrainingContributionGraph';
 import { RoutePoint, RouteAnalysis, DistanceUnit, SegmentIncrement } from '@/types';
 
 function HomeContent() {
@@ -126,6 +127,9 @@ function HomeContent() {
             </div>
           </div>
         </div>
+
+        {/* Training Contribution Graph */}
+        <TrainingContributionGraph />
 
         {/* Loading State */}
         {analyzing && (

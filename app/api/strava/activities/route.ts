@@ -61,9 +61,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch activities from Strava API
-    // Get up to 30 most recent activities (we'll filter for runs and races on the client)
+    // Support optional `after` (Unix timestamp) and `per_page` query params for
+    // date-range filtering (used by the contribution graph).
+    const DEFAULT_PER_PAGE = 150;
+    const afterParam = request.nextUrl.searchParams.get('after');
+    const perPageParam = request.nextUrl.searchParams.get('per_page');
+    const perPage = Math.min(200, Math.max(1, parseInt(perPageParam || String(DEFAULT_PER_PAGE)) || DEFAULT_PER_PAGE));
+
+    const stravaUrl = new URL('https://www.strava.com/api/v3/athlete/activities');
+    stravaUrl.searchParams.set('per_page', perPage.toString());
+    if (afterParam) {
+      stravaUrl.searchParams.set('after', afterParam);
+    }
+
     const activitiesResponse = await fetch(
-      'https://www.strava.com/api/v3/athlete/activities?per_page=150',
+      stravaUrl.toString(),
       {
         headers: {
           'Authorization': `Bearer ${currentAccessToken}`,
